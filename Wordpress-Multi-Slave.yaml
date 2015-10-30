@@ -19,7 +19,6 @@ parameters:
   server_name:
     type: string
     default: example-0
-
   server_flavor:
     type: string
     default: 4 GB Performance
@@ -37,6 +36,12 @@ parameters:
     type: string
     label: SSH Key
     description: SSH Key for WordPress Slave Nodes
+  parent_stack_id:
+    type: string
+    default: None
+  apache_default_domain:
+    type: string
+    default: exmaple.com
 
 resources:
   upload_role_config:
@@ -78,23 +83,8 @@ resources:
     properties:
       signal_transport: TEMP_URL_SIGNAL
       input_values:
-        apache_default_domain: { get_param: wordpress_url }
+        apache_default_domain: { get_param: apache_default_domain }
         tz: "America/Chicago"
-        mysql_root_user: "root"
-        mysql_root_password: { get_attr: [mysql_root_pw, value] }
-        mysql_default_user: "wordpress"
-        mysql_default_user_password: { get_attr: [database_pass, value] }
-        mysql_default_database: "wordpress"
-        holland_mysql_host: "localhost"
-        wordpress_db_host: "localhost"
-        wordpress_db_name: "wordpress"
-        wordpress_db_user: "wordpress"
-        wordpress_db_pass: { get_attr: [database_pass, value] }
-        wordpress_domain: { get_param: wordpress_url }
-        wordpress_sitename: { get_param: wordpress_sitename }
-        wordpress_user: { get_param: wordpress_user }
-        wordpress_user_pass: { get_attr: [wordpress_pass, value] }
-        wordpress_user_email: { get_param: wordpress_email }
       config:
         get_resource: wordpress_config
       server:
@@ -112,7 +102,7 @@ resources:
       user_data_format: SOFTWARE_CONFIG
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
-        rax-heat: { get_param: "OS::stack_id" }
+        rax-heat: { get_param: "parent_stack_id" }
 
 outputs:
   public_ip:
