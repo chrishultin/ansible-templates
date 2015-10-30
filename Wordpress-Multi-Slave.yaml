@@ -16,6 +16,10 @@ parameter_groups:
   - server_image
 
 parameters:
+  server_name:
+    type: string
+    default: example-0
+
   server_flavor:
     type: string
     default: 4 GB Performance
@@ -100,7 +104,7 @@ resources:
   wordpress_server:
     type: OS::Nova::Server
     properties:
-      name: { get_param: "OS::stack_name" }
+      name: { get_param: "server_name" }
       image: { get_param: server_image }
       flavor: { get_param: server_flavor }
       software_config_transport: POLL_TEMP_URL

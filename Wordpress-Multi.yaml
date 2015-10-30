@@ -61,7 +61,7 @@ parameters:
     type: number
     default: 0
     constraints:
-      - range: { min: 0, max: 10 }a
+      - range: { min: 0, max: 10 }
   child_template:
     type: string
     default: https://raw.githubusercontent.com/chrishultin/ansible-templates/master/Wordpress-Multi-Slave.yaml
@@ -170,12 +170,12 @@ resources:
           parent_stack_id: { get_param: "OS::stack_id" }
           server_image: { get_param: server_image }
           server_flavor: { get_param: server_flavor }
+          apache_default_domain: { get_param: wordpress_url }
           server_name:
             str_replace:
-              template: stack-secondary-number
+              template: stack-secondary-%index%
               params:
                 stack: { get_param: "OS::stack_id" }
-                number: %index%
 
 outputs:
   server_ip:
