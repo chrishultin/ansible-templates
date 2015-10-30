@@ -1,0 +1,121 @@
+heat_template_version: 2015-10-15
+
+description: |
+ #### WordPress, Slave
+
+parameter_groups:
+- label: WordPress Settings
+  parameters:
+  - wordpress_url
+  - wordpress_sitename
+  - wordpress_user
+
+- label: Advanced Settings
+  parameters:
+  - server_flavor
+  - server_image
+
+parameters:
+  server_flavor:
+    type: string
+    default: 4 GB Performance
+    constraints:
+    - allowed_values:
+      - 4 GB Performance
+      - 8 GB Performance
+  server_image:
+    type: string
+    default: Red Hat Enterprise Linux 7 (PVHVM)
+    constraints:
+    - allowed_values:
+      - Red Hat Enterprise Linux 7 (PVHVM)
+  ssh_key:
+    type: string
+    label: SSH Key
+    description: SSH Key for WordPress Slave Nodes
+
+resources:
+  upload_role_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+      - name: results
+      config: |
+        #!/bin/bash
+        set -e
+        git clone --progress https://github.com/chrishultin/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+
+  wordpress_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      config: |
+        ---
+        - name: Install and configure WordPress
+          hosts: localhost
+          connection: local
+          roles:
+          - common
+          - apache
+          - php
+          - firewall
+  deploy_roles:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      config:
+        get_resource: upload_role_config
+      server:
+        get_resource: wordpress_server
+  deploy_wordpress:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: deploy_roles
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      input_values:
+        apache_default_domain: { get_param: wordpress_url }
+        tz: "America/Chicago"
+        mysql_root_user: "root"
+        mysql_root_password: { get_attr: [mysql_root_pw, value] }
+        mysql_default_user: "wordpress"
+        mysql_default_user_password: { get_attr: [database_pass, value] }
+        mysql_default_database: "wordpress"
+        holland_mysql_host: "localhost"
+        wordpress_db_host: "localhost"
+        wordpress_db_name: "wordpress"
+        wordpress_db_user: "wordpress"
+        wordpress_db_pass: { get_attr: [database_pass, value] }
+        wordpress_domain: { get_param: wordpress_url }
+        wordpress_sitename: { get_param: wordpress_sitename }
+        wordpress_user: { get_param: wordpress_user }
+        wordpress_user_pass: { get_attr: [wordpress_pass, value] }
+        wordpress_user_email: { get_param: wordpress_email }
+      config:
+        get_resource: wordpress_config
+      server:
+        get_resource: wordpress_server
+  bootstrap:
+    type: "https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml"
+  wordpress_server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: "OS::stack_name" }
+      image: { get_param: server_image }
+      flavor: { get_param: server_flavor }
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      user_data: { get_attr: [ bootstrap, config ] }
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+
+outputs:
+  public_ip:
+    description: Server Public IP
+    value:
+      get_attr: [wordpress_server, accessIPv4]
+  private_ip:
+    description: Server Private IP
+    value:
+      get_attr: [wordpress_server, networks, private, 0]
