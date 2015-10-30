@@ -4,16 +4,6 @@ description: |
  #### WordPress, Slave
 
 parameter_groups:
-- label: WordPress Settings
-  parameters:
-  - wordpress_url
-  - wordpress_sitename
-  - wordpress_user
-
-- label: Advanced Settings
-  parameters:
-  - server_flavor
-  - server_image
 
 parameters:
   server_name:
