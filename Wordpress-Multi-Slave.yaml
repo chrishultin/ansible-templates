@@ -85,6 +85,7 @@ resources:
     type: OS::Nova::Server
     properties:
       name: { get_param: "server_name" }
+      key_name: { get_param: "ssh_key" }
       image: { get_param: server_image }
       flavor: { get_param: server_flavor }
       software_config_transport: POLL_TEMP_URL

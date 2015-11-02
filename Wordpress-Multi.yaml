@@ -139,7 +139,7 @@ resources:
         wordpress_user_pass: { get_attr: [wordpress_pass, value] }
         wordpress_user_email: { get_param: wordpress_email }
         lsync_private_key: { get_attr: [ssh_key, private_key] }
-        lsync_servers_str: { list_join: [',', { get_attr: [wordpress_secondary, network, private, 0] } ] }
+        lsync_servers_str: { list_join: [',', { get_attr: [wordpress_secondary, private_ip] } ] }
       config:
         get_resource: wordpress_config
       server:
@@ -175,7 +175,7 @@ resources:
             str_replace:
               template: stack-secondary-%index%
               params:
-                stack: { get_param: "OS::stack_id" }
+                stack: { get_param: "OS::stack_name" }
 
 outputs:
   server_ip:
