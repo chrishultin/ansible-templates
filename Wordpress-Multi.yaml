@@ -129,7 +129,7 @@ resources:
         mysql_default_user_password: { get_attr: [database_pass, value] }
         mysql_default_database: "wordpress"
         holland_mysql_host: "localhost"
-        wordpress_db_host: "localhost"
+        wordpress_db_host: { get_attr: [wordpress_server, networks, private, 0] }
         wordpress_db_name: "wordpress"
         wordpress_db_user: "wordpress"
         wordpress_db_pass: { get_attr: [database_pass, value] }
@@ -140,6 +140,9 @@ resources:
         wordpress_user_email: { get_param: wordpress_email }
         lsync_private_key: { get_attr: [ssh_key, private_key] }
         lsync_servers_str: { list_join: [',', { get_attr: [wordpress_secondary, private_ip] } ] }
+        firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
+        firewall_nodes: { get_attr: [wordpress_secondary, private_ip] }
+        firewall_node_rules: ["32,3306,tcp"]
       config:
         get_resource: wordpress_config
       server:
@@ -176,6 +179,26 @@ resources:
               template: stack-secondary-%index%
               params:
                 stack: { get_param: "OS::stack_name" }
+  load_balancer:
+    type: Rackspace::Cloud::LoadBalancer
+    depends_on:
+    - deploy_wordpress
+    - wordpress_secondary
+    properties:
+      name: "WP_Load_Balancer"
+      nodes:
+      - addresses: [ { get_attr: [wordpress_server, networks, private, 0] } ]
+        port: 80
+        condition: ENABLED
+      port: 80
+      protocol: HTTP
+      algorithm: ROUND_ROBIN
+      contentCaching: ENABLED
+      virtualIps:
+      - type: PUBLIC
+        ipVersion: IPV4
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
 
 outputs:
   server_ip:

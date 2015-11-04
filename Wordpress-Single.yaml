@@ -123,6 +123,7 @@ resources:
         wordpress_user: { get_param: wordpress_user }
         wordpress_user_pass: { get_attr: [wordpress_pass, value] }
         wordpress_user_email: { get_param: wordpress_email }
+        firewall_rules: ["0.0.0.0,0,80,tcp","0.0.0.0,0,443,tcp","0.0.0.0,0,22,tcp","8.8.8.8,32,1234,tcp"]
       config:
         get_resource: wordpress_config
       server:
@@ -141,6 +142,34 @@ resources:
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
+        build_config: backup_agent_only
+  backup_config:
+    type: Rackspace::Cloud::BackupConfig
+    depends_on: deploy_wordpress
+    properties:
+      BackupConfigurationName:
+        str_replace:
+          template: stack-Master-Backup
+          params:
+            stack: { get_param: "OS::stack_name" }
+      DayOfWeekId: null
+      Frequency: Daily
+      StartTimeHour: 11
+      StartTimeMinute: 30
+      StartTimeAmPm: PM
+      HourInterval: null
+      IsActive: true
+      Enabled: true
+      NotifyFailure: true
+      NotifyRecipients: { get_param: wordpress_email }
+      NotifySuccess: false
+      TimeZoneId: Central Standard Time
+      VersionRetention: 30
+      host_ip_address: { get_attr: [ wordpress_server, networks, private, 0] }
+      Inclusions:
+      - {"FilePath": "/var/spool/holland", "FileItemType": "Folder" }
+      - {"FilePath": "/var/www/vhosts", "FileItemType": "Folder" }
+
 
 outputs:
   server_ip:
