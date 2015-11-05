@@ -89,7 +89,7 @@ resources:
       flavor: 1GB Instance
       size: 5
       datastore_type: mysql
-      datastore_version: 5.6
+      datastore_version: "5.6"
       databases:
       - name: wordpress
       users:
@@ -181,7 +181,7 @@ resources:
       user_data_format: SOFTWARE_CONFIG
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
-        rax-heat: { get_param: "OS::stack_id" }a
+        rax-heat: { get_param: "OS::stack_id" }
         build_config: "backup_agent_only + monitoring_defaults"
   wordpress_server_http_check:
     type: Rackspace::CloudMonitoring::Check
