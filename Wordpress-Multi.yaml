@@ -100,6 +100,7 @@ resources:
           connection: local
           roles:
           - common
+          - ius
           - apache
           - php
           - mysql
@@ -143,6 +144,7 @@ resources:
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
         firewall_nodes: { get_attr: [wordpress_secondary, private_ip] }
         firewall_node_rules: ["32,3306,tcp"]
+        somethingelse: "RANDALLRULES"
       config:
         get_resource: wordpress_config
       server:
@@ -185,9 +187,9 @@ resources:
     - deploy_wordpress
     - wordpress_secondary
     properties:
-      name: "WP_Load_Balancer"
+      name: "WP_Load_Balancer-2"
       nodes:
-      - addresses: [ { get_attr: [wordpress_server, networks, private, 0] } ]
+      - addresses: { get_attr: [wordpress_secondary, private_ip] }
         port: 80
         condition: ENABLED
       port: 80
@@ -208,4 +210,4 @@ outputs:
   secondary_ips:
     description: Secondary Node IPs
     value:
-      get_attr: [wordpress_secondary, accessIPv4]
+      get_attr: [wordpress_secondary, private_ip]
