@@ -96,6 +96,9 @@ resources:
       - name: wordpress
         password: { get_attr: [database_pass, value] }
         databases: [wordpress]
+      - name: holland
+        password: { get_attr: [holland_pass, value] }
+        databases: [wordpress]
   upload_role_config:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -182,14 +185,18 @@ resources:
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
-        build_config: "backup_agent_only + monitoring_defaults"
+        build_config: "backup_agent_only+monitoring_defaults"
   wordpress_server_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_wordpress
     properties:
       entity: { get_resource: wordpress_server }
       type: remote.http
-      label: http_check
+      label:
+        str_replace:
+          template: stack Master HTTP Check
+          params:
+            stack: { get_param: "OS::stack_name" }
       details:
         url:
           str_replace:
@@ -214,7 +221,11 @@ resources:
     properties:
       entity: { get_resource: wordpress_server }
       type: remote.http
-      label: http_check
+      label:
+        str_replace:
+          template: stack Load Balancer HTTP Check
+          params:
+            stack: { get_param: "OS::stack_name" }
       details:
         url:
           str_replace:

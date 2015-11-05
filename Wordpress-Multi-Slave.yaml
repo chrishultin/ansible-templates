@@ -95,7 +95,7 @@ resources:
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "parent_stack_id" }
-        build_config: "backup_agent_only + monitoring_defaults"
+        build_config: "monitoring_defaults"
   wordpress_server_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_wordpress
