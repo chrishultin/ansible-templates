@@ -127,6 +127,7 @@ resources:
           - wordpress
           - firewall
           - lsync
+          - phpmyadmin
   deploy_roles:
     type: OS::Heat::SoftwareDeployment
     properties:
@@ -166,6 +167,7 @@ resources:
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
         firewall_nodes: { get_attr: [wordpress_secondary, private_ip] }
         firewall_node_rules: []
+        phpmyadmin_host: { get_attr: [wordpress_database, hostname] }
       config:
         get_resource: wordpress_config
       server:
@@ -185,7 +187,7 @@ resources:
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
-        build_config: "backup_agent_only+monitoring_defaults"
+        build_config: "backup_agent_only,monitoring_defaults"
   wordpress_server_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_wordpress
