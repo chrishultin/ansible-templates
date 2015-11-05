@@ -9,14 +9,10 @@ parameter_groups:
   - wordpress_url
   - wordpress_sitename
   - wordpress_user
-
-- label: Advanced Settings
-  parameters:
-  - server_flavor
-  - server_image
-  - server_count
+  - wordpress_email
 
 parameters:
+  #WordPress Customization
   wordpress_url:
     type: string
     default: example.com
@@ -43,13 +39,15 @@ parameters:
     default: admin@example.com
     label: WordPress Admin E-mail
     description: E-mail Address for WordPress Admin User
+  #Advanced Options
   server_flavor:
     type: string
-    default: 4 GB Performance
+    default: 4 GB General Purpose v1
     constraints:
     - allowed_values:
-      - 4 GB Performance
-      - 8 GB Performance
+      - 2 GB General Purpose v1
+      - 4 GB General Purpose v1
+      - 8 GB General Purpose v1
   server_image:
     type: string
     default: Red Hat Enterprise Linux 7 (PVHVM)
@@ -59,7 +57,7 @@ parameters:
       - Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)
   server_count:
     type: number
-    default: 0
+    default: 1
     constraints:
       - range: { min: 0, max: 10 }
   child_template:
@@ -73,11 +71,31 @@ resources:
     type: OS::Heat::RandomString
   database_pass:
     type: OS::Heat::RandomString
+  holland_pass:
+    type: OS::Heat::RandomString
   ssh_key:
     type: OS::Nova::KeyPair
     properties:
       name: { get_param: "OS::stack_id" }
       save_private_key: true
+  wordpress_database:
+    type: OS::Trove::Instance
+    properties:
+      name:
+        str_replace:
+          template: stack_Database
+          params:
+            stack: { get_param: "OS::stack_name" }
+      flavor: 1GB Instance
+      size: 5
+      datastore_type: mysql
+      datastore_version: 5.6
+      databases:
+      - name: wordpress
+      users:
+      - name: wordpress
+        password: { get_attr: [database_pass, value] }
+        databases: [wordpress]
   upload_role_config:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -100,10 +118,8 @@ resources:
           connection: local
           roles:
           - common
-          - ius
           - apache
           - php
-          - mysql
           - holland
           - wordpress
           - firewall
@@ -124,13 +140,16 @@ resources:
       input_values:
         apache_default_domain: { get_param: wordpress_url }
         tz: "America/Chicago"
-        mysql_root_user: "root"
-        mysql_root_password: { get_attr: [mysql_root_pw, value] }
-        mysql_default_user: "wordpress"
-        mysql_default_user_password: { get_attr: [database_pass, value] }
-        mysql_default_database: "wordpress"
-        holland_mysql_host: "localhost"
-        wordpress_db_host: { get_attr: [wordpress_server, networks, private, 0] }
+#        mysql_root_user: "root"
+#        mysql_root_password: { get_attr: [mysql_root_pw, value] }
+#        mysql_default_user: "wordpress"
+#        mysql_default_user_password: { get_attr: [database_pass, value] }
+#        mysql_default_database: "wordpress"
+        holland_mysql_user: "holland"
+        holland_mysql_password: {  get_attr: [holland_pass, value] }
+        holland_mysql_host: { get_attr: [wordpress_database, hostname] }
+        holland_create_user: "no"
+        wordpress_db_host: { get_attr: [wordpress_database, hostname] }
         wordpress_db_name: "wordpress"
         wordpress_db_user: "wordpress"
         wordpress_db_pass: { get_attr: [database_pass, value] }
@@ -143,8 +162,7 @@ resources:
         lsync_servers_str: { list_join: [',', { get_attr: [wordpress_secondary, private_ip] } ] }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
         firewall_nodes: { get_attr: [wordpress_secondary, private_ip] }
-        firewall_node_rules: ["32,3306,tcp"]
-        somethingelse: "RANDALLRULES"
+        firewall_node_rules: []
       config:
         get_resource: wordpress_config
       server:
@@ -163,7 +181,58 @@ resources:
       user_data_format: SOFTWARE_CONFIG
       user_data: { get_attr: [ bootstrap, config ] }
       metadata:
+        rax-heat: { get_param: "OS::stack_id" }a
+        build_config: "backup_agent_only + monitoring_defaults"
+  wordpress_server_http_check:
+    type: Rackspace::CloudMonitoring::Check
+    depends_on: deploy_wordpress
+    properties:
+      entity: { get_resource: wordpress_server }
+      type: remote.http
+      label: http_check
+      details:
+        url:
+          str_replace:
+            template: "http://ipaddr"
+            params:
+              ipaddr: { get_attr: [wordpress_server, accessIPv4] }
+      metadata:
         rax-heat: { get_param: "OS::stack_id" }
+        stack-name: { get_param: "OS::stack_name" }
+      period: 120
+      timeout: 10
+      monitoring_zones_poll:
+      - Northern Virginia (IAD)
+      - Chicago (ORD)
+      - Dallas Fort Worth (DFW)
+      - London (LON)
+      target_hostname: { get_attr: [wordpress_server, accessIPv4] }
+      target_receiver: IPv4
+  load_balancer_http_check:
+    type: Rackspace::CloudMonitoring::Check
+    depends_on: load_balancer
+    properties:
+      entity: { get_resource: wordpress_server }
+      type: remote.http
+      label: http_check
+      details:
+        url:
+          str_replace:
+            template: "http://ipaddr"
+            params:
+              ipaddr: { get_attr: [load_balancer, PublicIp] }
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        stack-name: { get_param: "OS::stack_name" }
+      period: 120
+      timeout: 10
+      monitoring_zones_poll:
+      - Northern Virginia (IAD)
+      - Chicago (ORD)
+      - Dallas Fort Worth (DFW)
+      - London (LON)
+      target_hostname: { get_attr: [load_balancer, PublicIp] }
+      target_receiver: IPv4
   wordpress_secondary:
     type: OS::Heat::ResourceGroup
     properties:
@@ -187,8 +256,15 @@ resources:
     - deploy_wordpress
     - wordpress_secondary
     properties:
-      name: "WP_Load_Balancer-2"
+      name:
+        str_replace:
+          template: stack_Load_Balancer
+          params:
+            stack: { get_param: "OS::stack_name" }
       nodes:
+      - addresses: [ { get_attr: [wordpress_server, networks, private, 0] } ]
+        port: 80
+        condition: ENABLED
       - addresses: { get_attr: [wordpress_secondary, private_ip] }
         port: 80
         condition: ENABLED
