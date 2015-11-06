@@ -100,7 +100,7 @@ resources:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_drupal
     properties:
-      entity: { get_resource: wordpress_server }
+      entity: { get_resource: drupal_server }
       type: remote.http
       label:
         str_replace:
