@@ -1,7 +1,7 @@
 heat_template_version: 2015-10-15
 
 description: |
- #### WordPress, Slave
+ #### Drupal, Slave
 
 parameter_groups:
 
@@ -46,13 +46,13 @@ resources:
         set -e
         git clone --progress https://github.com/chrishultin/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
 
-  wordpress_config:
+  drupal_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ansible
       config: |
         ---
-        - name: Install and configure WordPress
+        - name: Install and configure Drupal
           hosts: localhost
           connection: local
           roles:
@@ -67,8 +67,8 @@ resources:
       config:
         get_resource: upload_role_config
       server:
-        get_resource: wordpress_server
-  deploy_wordpress:
+        get_resource: drupal_server
+  deploy_drupal:
     type: OS::Heat::SoftwareDeployment
     depends_on: deploy_roles
     properties:
@@ -77,28 +77,28 @@ resources:
         apache_default_domain: { get_param: apache_default_domain }
         tz: "America/Chicago"
       config:
-        get_resource: wordpress_config
+        get_resource: drupal_config
       server:
-        get_resource: wordpress_server
+        get_resource: drupal_server
   bootstrap:
     type: "https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml"
-  wordpress_server:
+  drupal_server:
     type: OS::Nova::Server
     properties:
-      name: { get_param: "server_name" }
-      key_name: { get_param: "ssh_key" }
+      name: { get_param: server_name }
+      key_name: { get_param: ssh_key }
       image: { get_param: server_image }
       flavor: { get_param: server_flavor }
       software_config_transport: POLL_TEMP_URL
       config_drive: true
       user_data_format: SOFTWARE_CONFIG
-      user_data: { get_attr: [ bootstrap, config ] }
+      user_data: { get_attr: [bootstrap, config]
       metadata:
         rax-heat: { get_param: "parent_stack_id" }
         build_config: "monitoring_defaults"
-  wordpress_server_http_check:
+  drupal_server_http_check:
     type: Rackspace::CloudMonitoring::Check
-    depends_on: deploy_wordpress
+    depends_on: deploy_drupal
     properties:
       entity: { get_resource: wordpress_server }
       type: remote.http
@@ -112,7 +112,7 @@ resources:
           str_replace:
             template: "http://ipaddr"
             params:
-              ipaddr: { get_attr: [wordpress_server, accessIPv4] }
+              ipaddr: { get_addr: [drupal_server, accessIPv4] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         stack-name: { get_param: "OS::stack_name" }
@@ -123,15 +123,15 @@ resources:
       - Chicago (ORD)
       - Dallas Fort Worth (DFW)
       - London (LON)
-      target_hostname: { get_attr: [wordpress_server, accessIPv4] }
+      target_hostname: { get_attr: [drupal_server, accessIPv4] }
       target_receiver: IPv4
 
 outputs:
   public_ip:
     description: Server Public IP
     value:
-      get_attr: [wordpress_server, accessIPv4]
+      get_attr: [drupal_server, accessIPv4]
   private_ip:
     description: Server Private IP
     value:
-      get_attr: [wordpress_server, networks, private, 0]
+      get_attr: [drupal_server, networks, private, 0]
