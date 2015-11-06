@@ -112,8 +112,7 @@ resources:
           str_replace:
             template: "http://ipaddr"
             params:
-              ipaddr: { get_addr: [drupal_server, accessIPv4] }
-        criteria: 'if (metric["code"] regex "^[234]..$") { return OK } return WARNING'
+              ipaddr: { get_attr: [drupal_server, accessIPv4] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         stack-name: { get_param: "OS::stack_name" }

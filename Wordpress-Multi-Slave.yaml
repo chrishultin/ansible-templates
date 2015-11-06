@@ -113,7 +113,6 @@ resources:
             template: "http://ipaddr"
             params:
               ipaddr: { get_attr: [wordpress_server, accessIPv4] }
-        criteria: 'if (metric["code"] regex "^[234]..$") { return OK } return WARNING'
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         stack-name: { get_param: "OS::stack_name" }
