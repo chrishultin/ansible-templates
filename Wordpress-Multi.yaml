@@ -43,6 +43,8 @@ parameters:
   server_flavor:
     type: string
     default: 4 GB General Purpose v1
+    label: Flavor for Magento Server
+    description: Flavor of Cloud Server to use for Magento
     constraints:
     - allowed_values:
       - 2 GB General Purpose v1
@@ -118,6 +120,16 @@ resources:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ansible
+      inputs:
+      - default: "[]"
+        name: lsync_servers
+        type: CommaDelimitedList
+      - default: "[]"
+        name: firewall_nodes
+        type: CommaDelimitedList
+      - default: "[]"
+        name: firewall_node_rules
+        type: CommaDelimitedList
       config: |
         ---
         - name: Install and configure WordPress

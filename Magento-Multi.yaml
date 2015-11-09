@@ -1,74 +1,112 @@
 heat_template_version: 2015-10-15
 
 description: |
- #### Drupal, Multiple Servers
+ #### Magento, Multiple Servers
 
 parameter_groups:
-- label: Drupal Settings
+- label: Magento Settings
   parameters:
-  - drupal_url
-  - drupal_sitename
-  - drupal_user
-  - drupal_email
+  - magento_url
+  - magento_user
+  - magento_email
+  - magento_fname
+  - magento_lname
+  - magneto_eula
 
 parameters:
-  #Drupal Customization
-  drupal_url:
+  #Magento Customization
+  magento_url:
     type: string
     default: example.com
     label: Site Domain
-    description: Domain to use with Drupal Site
+    description: Domain to use with Magento Site
     constraints:
     - allowed_pattern: "^[a-zA-Z0-9.-]{1,255}.[a-zA-Z]{2,15}$"
       description: Must be a valid domain name
-  drupal_sitename:
-    type: string
-    default: Example Site
-    label: Site Title
-    description: Title to use for Drupal Site
-  drupal_user:
+  magento_user:
     type: string
     default: admin
-    label: Drupal Admin Username
-    description: Username for Drupal login
+    label: Magento Admin Username
+    description: Username for Magento admin
     constraints:
     - allowed_pattern: "^[a-zA-Z0-9]*$"
       description: Only can contain A-Z and 0-9
-  drupal_email:
+  magento_fname:
+    type: string
+    default: Joe
+    label: Magento Admin First Name
+    description: First name for Magento admin
+  magento_lname:
+    type: string
+    default: User
+    label: Magento Admin Last Name
+    description: Last name for Magento admin
+  magento_email:
     type: string
     default: admin@example.com
-    label: Drupal Admin E-mail
-    description: E-mail Address for Drupal Admin User
+    label: Magento Admin E-Mail
+    description: E-Mail for Magento admin
+  magento_eula:
+    type: boolean
+    label: Agree to Terms?
+    description: You must agree to the terms of the Magento Community Edition License
+    constraints:
+    - allowed_values:
+      - True
+      description: |
+        You must agree to the Magento Community Edition License
+        which can be found here: http://opensource.org/licenses/osl-3.0.php
+  magento_samples:
+    type: boolean
+    default: False
+    label: Include Sample Data?
+    description: Include Magento Sample Data
   #Advanced Options
-  server_flavor:
+  flavor:
     type: string
-    default: 4 GB General Purpose v1
+    default: 8 GB General Purpose v1
+    label: Flavor for Magento Server
+    description: Flavor of Cloud Server to use for Magento
     constraints:
     - allowed_values:
-      - 2 GB General Purpose v1
-      - 4 GB General Purpose v1
       - 8 GB General Purpose v1
-  server_image:
+  database_disk:
+    type: number
+    default: 10
+    constraints:
+    - range:
+        min: 10
+        max: 500
+    label: Database Disk (in GB)
+    description: Size of the Magento Cloud Database volume in GB
+  database_flavor:
     type: string
-    default: Red Hat Enterprise Linux 7 (PVHVM)
+    default: 4GB Instance
+    label: Cloud Database Flavor
+    description: Flavor for the Magento Cloud Database
     constraints:
     - allowed_values:
-      - Red Hat Enterprise Linux 7 (PVHVM)
-      - Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)
+      - 4GB Instance
+      - 8GB Instance
+      - 16GB Instance
+      - 32GB Instance
+      - 64GB Instance
   server_count:
     type: number
     default: 1
     constraints:
-      - range: { min: 0, max: 10 }
+    - range:
+        min: 0
+        max: 10
   child_template:
     type: string
-    default: https://raw.githubusercontent.com/chrishultin/ansible-templates/master/Drupal-Multi-Slave.yaml
+    default:  https://raw.githubusercontent.com/chrishultin/ansible-templates/master/Wordpress-Multi-Slave.yaml
 
 resources:
   #Passwords
-  mysql_root_pw:
+  percona_root_pw:
     type: OS::Heat::RandomString
-  drupal_pass:
+  magento_pass:
     type: OS::Heat::RandomString
   database_pass:
     type: OS::Heat::RandomString
@@ -81,7 +119,7 @@ resources:
       name: { get_param: "OS::stack_id" }
       save_private_key: true
   #Cloud Database
-  drupal_database:
+  magento_database:
     type: OS::Trove::Instance
     properties:
       name:
@@ -89,19 +127,18 @@ resources:
           template: stack_Database
           params:
             stack: { get_param: "OS::stack_name" }
-      flavor: 1GB Instance
-      size: 5
-      datastore_type: mysql
-      datastore_version: "5.6"
+      flavor: { get_param: database_flavor }
+      size: { get_param: database_disk }
+      datastore_type: percona
       databases:
-      - name: drupal
+      - name: magento
       users:
-      - name: drupal
+      - name: magento
         password: { get_attr: [database_pass, value] }
-        databases: [drupal]
+        databases: [magento]
       - name: holland
         password: { get_attr: [holland_pass, value] }
-        databases: [drupal]
+        databases: [magento]
   #Software Configurations
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -110,10 +147,11 @@ resources:
       outputs:
       - name: results
       config: |
-        #!/bin/bash
-        set -e
-        git clone --progress https://github.com/chrishultin/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
-  drupal_config:
+      #!/bin/bash
+      set -e
+      git clone --progress https://github.com/chrishultin/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+
+  magento_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ansible
@@ -129,61 +167,66 @@ resources:
         type: CommaDelimitedList
       config: |
         ---
-        - name: Install and configure Drupal
+        - name: Install and configure Magento
           hosts: localhost
           connection: local
           roles:
           - common
-          - apache
-          - php
+          - nginx
           - holland
-          - composer
-          - drupal
-          - firewall
+          - redis
+          - memcache
+          - php-fpm
+          - magento-ce
           - lsync
-          - phpmyadmin
+          - firewall
   deploy_roles:
     type: OS::Heat::SoftwareDeployment
     properties:
       signal_transport: TEMP_URL_SIGNAL
-      config:
-        get_resource: upload_role_config
-      server:
-        get_resource: drupal_server
-  deploy_drupal:
+      config: { get_resource: upload_role_config }
+      server: { get_resource: magento_server }
+  deploy_magento:
     type: OS::Heat::SoftwareDeployment
     depends_on: deploy_roles
     properties:
       signal_transport: TEMP_URL_SIGNAL
       input_values:
-        apache_default_domain: { get_param: drupal_url }
         tz: "America/Chicago"
+        nginx_vhost_str: { get_param: magneto_url }
         holland_mysql_user: "holland"
-        holland_mysql_password: {  get_attr: [holland_pass, value] }
-        holland_mysql_host: { get_attr: [drupal_database, hostname] }
-        holland_create_user: "no"
-        drupal_db_host: { get_attr: [drupal_database, hostname] }
-        drupal_db_name: "drupal"
-        drupal_db_user: "drupal"
-        drupal_db_password: { get_attr: [database_pass, value] }
-        drupal_domain: { get_param: drupal_url }
-        drupal_user: { get_param: drupal_user }
-        drupal_pass: { get_attr: [drupal_pass, value] }
+        holland_mysql_password: { get_attr: [holland_pass, value] }
+        holland_mysql_host: { get_attr: [magento_database, hostname] }
+        holland_create_user: no
+        redis_instances:
+        - { name: 'fpc', port: '6381', persistent: 'FALSE', maxmemory: '1gb' }
+        - { name: 'obj', port: '6379', persistent: 'FALSE', maxmemory: '1gb' }
+        - { name: 'ses', port: '6380', persistent: 'TRUE', maxmemory: '1gb' }
+        magento_db_user: "magento"
+        magento_db_password: { get_attr: [database_pass, value] }
+        magento_db_name: "magento"
+        mysql_host_ip: { get_attr: [magento_database, hostname] }
+        magento_sftp_user: "magento"
+        magento_sftp_password: { get_attr: [magento_pass, value] }
+        magento_version: 1.9.1.0
+        magento_sample_content_version: 1.9.1.0
+        magento_sample_content: { get_param: magento_samples }
+        magento_create_db: no
+        magento_vhost_domain: { get_param: magento_url }
+        magento_admin_user: { get_param: magento_user }
+        magento_admin_pass: { get_attr: [magento_pass, value] }
+        magento_admin_fname: { get_param: magento_fname }
+        magento_admin_lname: { get_param: magento_lname }
+        magento_admin_email: { get_param: magento_email }
         lsync_private_key: { get_attr: [ssh_key, private_key] }
-        lsync_servers:
-          get_attr: [drupal_secondary, private_ip]
+        lsync_servers: { get_attr: [magento_secondary, private_ip] }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
-        firewall_nodes: { get_attr: [drupal_secondary, private_ip] }
-        firewall_node_rules: ["32,3306,tcp"]
-        phpmyadmin_host: { get_attr: [drupal_database, hostname] }
-      config:
-        get_resource: drupal_config
-      server:
-        get_resource: drupal_server
-  bootstrap:
-    type: "https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml"
+        firewall_nodes: { get_attr: [magento_secondary, private_ip] }
+        firewall_node_rules: []
+      config: { get_resource: magento_config }
+      server: { get_resource: magento_server }
   #Master Server
-  drupal_server:
+  magento_server:
     type: OS::Nova::Server
     properties:
       name: { get_param: "OS::stack_name" }
@@ -198,11 +241,11 @@ resources:
         rax-heat: { get_param: "OS::stack_id" }
         build_config: "backup_agent_only,monitoring_defaults"
   #Monitoring Checks
-  drupal_server_http_check:
+  magneto_server_http_check:
     type: Rackspace::CloudMonitoring::Check
-    depends_on: deploy_drupal
+    depends_on: deploy_magento
     properties:
-      entity: { get_resource: drupal_server }
+      entity: { get_resource: magento_server }
       type: remote.http
       label:
         str_replace:
@@ -214,7 +257,7 @@ resources:
           str_replace:
             template: "http://ipaddr"
             params:
-              ipaddr: { get_attr: [drupal_server, accessIPv4] }
+              ipaddr: { get_attr: [magento_server, accessIPv4] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         stack-name: { get_param: "OS::stack_name" }
@@ -225,13 +268,13 @@ resources:
       - Chicago (ORD)
       - Dallas Fort Worth (DFW)
       - London (LON)
-      target_hostname: { get_attr: [drupal_server, accessIPv4] }
+      target_hostname: { get_attr: [magento_server, accessIPv4] }
       target_receiver: IPv4
   load_balancer_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: load_balancer
     properties:
-      entity: { get_resource: drupal_server }
+      entity: { get_resource: magento_server }
       type: remote.http
       label:
         str_replace:
@@ -257,11 +300,11 @@ resources:
       target_hostname: { get_attr: [load_balancer, PublicIp] }
       target_receiver: IPv4
   #Cloud Backup
-  drupal_backup:
+  magento_backup:
     type: Rackspace::Cloud::BackupConfig
-    depends_on: drupal_server
+    depends_on: magento_server
     properties:
-      host_ip_address: { get_attr: [drupal_server, accessIPv4] }
+      host_ip_address: { get_attr: [magento_server, accessIPv4] }
       BackupConfigurationName:
         str_replace:
           template: stack Weekly Backup
@@ -273,7 +316,7 @@ resources:
       - FilePath: "/var/www/"
         FileItemType: "Folder"
       NotifyFailure: true
-      NotifyRecipients: { get_param: drupal_email }
+      NotifyRecipients: { get_param: magento_email }
       TimeZoneId: Central Standard Time
       StartTimeAmPm: AM
       StartTimeHour: 1
@@ -283,7 +326,7 @@ resources:
       Frequency: "Weekly"
       VersionRetention: 30
   #Secondary Server
-  drupal_secondary:
+  magento_secondary:
     type: OS::Heat::ResourceGroup
     properties:
       count: { get_param: server_count }
@@ -294,7 +337,7 @@ resources:
           parent_stack_id: { get_param: "OS::stack_id" }
           server_image: { get_param: server_image }
           server_flavor: { get_param: server_flavor }
-          apache_default_domain: { get_param: drupal_url }
+          apache_default_domain: { get_param: magento_url }
           server_name:
             str_replace:
               template: stack-secondary-%index%
@@ -304,8 +347,8 @@ resources:
   load_balancer:
     type: Rackspace::Cloud::LoadBalancer
     depends_on:
-    - deploy_drupal
-    - drupal_secondary
+    - deploy_magento
+    - magento_secondary
     properties:
       name:
         str_replace:
@@ -313,10 +356,10 @@ resources:
           params:
             stack: { get_param: "OS::stack_name" }
       nodes:
-      - addresses: [ { get_attr: [drupal_server, networks, private, 0] } ]
+      - addresses: [ { get_attr: [magento_server, networks, private, 0] } ]
         port: 80
         condition: ENABLED
-      - addresses: { get_attr: [drupal_secondary, private_ip] }
+      - addresses: { get_attr: [magento_secondary, private_ip] }
         port: 80
         condition: ENABLED
       port: 80
@@ -330,32 +373,32 @@ resources:
         rax-heat: { get_param: "OS::stack_id" }
 
 outputs:
-  drupal_login_user:
-    description: WordPress Admin User
+  magento_login_user:
+    description: Magento Admin User
     value:
-      get_param: drupal_user
-  drupal_login_password:
-    description: WordPress Admin Password
+      get_param: magento_user
+  magento_login_password:
+    description: Magento Admin Password
     value:
-      get_attr: [drupal_pass, value]
-  drupal_public_ip:
+      get_attr: [magento_pass, value]
+  magento_public_ip:
     description: Load Balancer IP
     value:
       get_attr: [load_balancer, PublicIp]
-  drupal_admin_url:
-    description: WordPress Admin URL
+  magento_admin_url:
+    description: Magento Admin URL
     value:
       str_replace:
         template: "https://domain/wp-admin/"
         params:
-          domain: { get_param: drupal_url }
-  drupal_public_url:
-    description: WordPress Public URL
+          domain: { get_param: magento_url }
+  magento_public_url:
+    description: Magento Public URL
     value:
       str_replace:
         template: "http://domain/"
         params:
-          domain: { get_param: drupal_url }
+          domain: { get_param: magento_url }
   phpmyadmin_url:
     description: PHPMyAdmin URL
     value:
@@ -363,10 +406,10 @@ outputs:
         template: "https://IP/phpmyadmin/"
         params:
           IP:
-            get_attr: [drupal_server, accessIPv4]
+            get_attr: [magento_server, accessIPv4]
   mysql_user:
     description: Database User
-    value: "drupal"
+    value: "magento"
   mysql_password:
     description: Database Password
     value:
@@ -378,8 +421,8 @@ outputs:
   server_ip:
     description: Server Public IP
     value:
-      get_attr: [drupal_server, accessIPv4]
+      get_attr: [magento_server, accessIPv4]
   secondary_ips:
     description: Secondary Node IPs
     value:
-      get_attr: [drupal_secondary, public_ip]
+      get_attr: [magento_secondary, public_ip]
