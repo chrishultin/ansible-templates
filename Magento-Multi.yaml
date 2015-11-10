@@ -403,7 +403,7 @@ outputs:
     description: Magento Admin URL
     value:
       str_replace:
-        template: "https://domain/wp-admin/"
+        template: "https://domain/admin/"
         params:
           domain: { get_param: magento_url }
   magento_public_url:
@@ -413,14 +413,6 @@ outputs:
         template: "http://domain/"
         params:
           domain: { get_param: magento_url }
-  phpmyadmin_url:
-    description: PHPMyAdmin URL
-    value:
-      str_replace:
-        template: "https://IP/phpmyadmin/"
-        params:
-          IP:
-            get_attr: [magento_server, accessIPv4]
   mysql_user:
     description: Database User
     value: "magento"

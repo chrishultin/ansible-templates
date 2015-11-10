@@ -1,0 +1,21 @@
+heat_template_version: 2015-10-15
+
+description: Software Config Bootstrap
+
+parameter_groups:
+
+parameters:
+
+resources:
+  bootstrap:
+    type: "https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml"
+  boostrap_server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: "OS::stack_name" }
+      image: Red Hat Enterprise Linux 7 (PVHVM)
+      flavor: 2 GB Performance
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      user_data: { get_attr: [ bootstrap, config ] }
