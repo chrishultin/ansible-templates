@@ -220,7 +220,6 @@ resources:
         magento_version: 1.9.1.0
         magento_sample_content_version: 1.9.1.0
         magento_sample_content: { get_param: magento_samples }
-        magento_create_db: no
         magento_vhost_domain: { get_param: magento_url }
         magento_admin_user: { get_param: magento_user }
         magento_admin_pass: { get_attr: [magento_pass, value] }
@@ -383,6 +382,7 @@ resources:
       virtualIps:
       - type: PUBLIC
         ipVersion: IPV4
+      sessionPersistence: HTTP_COOKIE
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
 
