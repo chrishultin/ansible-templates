@@ -11,7 +11,7 @@ parameter_groups:
   - magento_email
   - magento_fname
   - magento_lname
-  - magneto_eula
+  - magento_eula
 
 parameters:
   #Magento Customization
@@ -62,7 +62,7 @@ parameters:
     label: Include Sample Data?
     description: Include Magento Sample Data
   #Advanced Options
-  flavor:
+  server_flavor:
     type: string
     default: 8 GB General Purpose v1
     label: Flavor for Magento Server
@@ -70,6 +70,12 @@ parameters:
     constraints:
     - allowed_values:
       - 8 GB General Purpose v1
+  server_image:
+    type: string
+    default: Red Hat Enterprise Linux 7 (PVHVM)
+    constraints:
+    - allowed_values:
+      - Red Hat Enterprise Linux 7 (PVHVM)
   database_disk:
     type: number
     default: 10
@@ -100,7 +106,7 @@ parameters:
         max: 10
   child_template:
     type: string
-    default:  https://raw.githubusercontent.com/chrishultin/ansible-templates/master/Wordpress-Multi-Slave.yaml
+    default:  https://raw.githubusercontent.com/chrishultin/ansible-templates/master/Magento-Multi-Slave.yaml
 
 resources:
   #Passwords
@@ -147,15 +153,18 @@ resources:
       outputs:
       - name: results
       config: |
-      #!/bin/bash
-      set -e
-      git clone --progress https://github.com/chrishultin/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+        #!/bin/bash
+        set -e
+        git clone --progress https://github.com/chrishultin/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
 
   magento_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ansible
       inputs:
+      - default: "[]"
+        name: lsync_dirs
+        type: CommaDelimitedList
       - default: "[]"
         name: lsync_servers
         type: CommaDelimitedList
@@ -193,7 +202,7 @@ resources:
       signal_transport: TEMP_URL_SIGNAL
       input_values:
         tz: "America/Chicago"
-        nginx_vhost_str: { get_param: magneto_url }
+        nginx_vhost_str: { get_param: magento_url }
         holland_mysql_user: "holland"
         holland_mysql_password: { get_attr: [holland_pass, value] }
         holland_mysql_host: { get_attr: [magento_database, hostname] }
@@ -219,12 +228,17 @@ resources:
         magento_admin_lname: { get_param: magento_lname }
         magento_admin_email: { get_param: magento_email }
         lsync_private_key: { get_attr: [ssh_key, private_key] }
+        lsync_dirs: ['/var/www/vhosts', '/etc/nginx/conf.d']
         lsync_servers: { get_attr: [magento_secondary, private_ip] }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
         firewall_nodes: { get_attr: [magento_secondary, private_ip] }
         firewall_node_rules: []
       config: { get_resource: magento_config }
       server: { get_resource: magento_server }
+
+  bootstrap:
+    type: https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml
+
   #Master Server
   magento_server:
     type: OS::Nova::Server
@@ -241,7 +255,7 @@ resources:
         rax-heat: { get_param: "OS::stack_id" }
         build_config: "backup_agent_only,monitoring_defaults"
   #Monitoring Checks
-  magneto_server_http_check:
+  magento_server_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_magento
     properties:
