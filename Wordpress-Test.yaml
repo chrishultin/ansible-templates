@@ -52,13 +52,12 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: Red Hat Enterprise Linux 7 (PVHVM)
+    default: dc3ff0d8-f0d0-4b2c-b105-ffe421fec277
     label: Server Image
     description: Image to use for WordPress
     constraints:
     - allowed_values:
-      - Red Hat Enterprise Linux 7 (PVHVM)
-      - Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)
+      - dc3ff0d8-f0d0-4b2c-b105-ffe421fec277
   server_count:
     type: number
     default: 1
@@ -189,8 +188,6 @@ resources:
         get_resource: wordpress_config
       server:
         get_resource: wordpress_server
-  bootstrap:
-    type: "https://raw.githubusercontent.com/chrishultin/ansible-templates/master/bootconfig_ansible.yaml"
   #Master Server
   wordpress_server:
     type: OS::Nova::Server
@@ -202,7 +199,6 @@ resources:
       software_config_transport: POLL_TEMP_URL
       config_drive: true
       user_data_format: SOFTWARE_CONFIG
-      user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         build_config: "backup_agent_only,monitoring_defaults"
