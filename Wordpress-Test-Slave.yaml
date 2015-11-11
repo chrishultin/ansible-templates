@@ -19,10 +19,10 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: dc3ff0d8-f0d0-4b2c-b105-ffe421fec277
+    default: 9d462caa-9b65-4d11-828f-9bf5cd68fae7
     constraints:
     - allowed_values:
-      - dc3ff0d8-f0d0-4b2c-b105-ffe421fec277
+      - 9d462caa-9b65-4d11-828f-9bf5cd68fae7
   ssh_key:
     type: string
     label: SSH Key
@@ -80,6 +80,8 @@ resources:
         get_resource: wordpress_config
       server:
         get_resource: wordpress_server
+  bootstrap:
+    type: "https://raw.githubusercontent.com/chrishultin/ansible-templates/master/bootconfig_ansible_new.yaml"
   wordpress_server:
     type: OS::Nova::Server
     properties:
@@ -90,6 +92,7 @@ resources:
       software_config_transport: POLL_TEMP_URL
       config_drive: true
       user_data_format: SOFTWARE_CONFIG
+      user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "parent_stack_id" }
         build_config: "monitoring_defaults"

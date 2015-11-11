@@ -6,23 +6,6 @@ resources:
     type: "OS::Heat::CloudConfig"
     properties:
       cloud_config:
-        apt_upgrade: true
-        apt-sources:
-        - source: "ppa:ansible/ansible"
-        - source: "ppa:saltstack/salt"
-        packages:
-        - python-pip
-        - git
-        - gcc
-        - python-dev
-        - libyaml-dev
-        - libssl-dev
-        - libffi-dev
-        - libxml2-dev
-        - libxslt1-dev
-        - python-apt
-        - ansible
-        - salt-minion
         write_files:
         - path: /etc/os-collect-config.conf
           content: |
@@ -855,15 +838,6 @@ resources:
         - cat /etc/os-collect-config.conf
         - os-collect-config --one-time --debug
 
-  install_agents:
-    type: "OS::Heat::SoftwareConfig"
-    properties:
-      group: ungrouped
-      config: |
-        #!/bin/bash
-        set -eux
-        pip install os-collect-config os-apply-config os-refresh-config dib-utils
-
   start:
     type: "OS::Heat::SoftwareConfig"
     properties:
@@ -924,7 +898,6 @@ resources:
     properties:
       parts:
       - config: { get_resource: configure }
-      - config: { get_resource: install_agents }
       - config: { get_resource: start }
 
 outputs:
