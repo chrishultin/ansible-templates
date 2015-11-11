@@ -52,12 +52,12 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: d6a05bf4-fdc6-4a02-a833-08b4eca5451f
+    default: 29861fa3-ca6d-4c78-a68b-a69fd7024ab9
     label: Server Image
     description: Image to use for WordPress
     constraints:
     - allowed_values:
-      - d6a05bf4-fdc6-4a02-a833-08b4eca5451f
+      - 29861fa3-ca6d-4c78-a68b-a69fd7024ab9
   server_count:
     type: number
     default: 1
