@@ -190,7 +190,7 @@ resources:
       server:
         get_resource: wordpress_server
   bootstrap:
-    type: "https://raw.githubusercontent.com/chrishultin/ansible-templates/master/bootconfig_ansible.yaml"
+    type: "https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml"
   #Master Server
   wordpress_server:
     type: OS::Nova::Server
