@@ -853,7 +853,7 @@ resources:
       config: |
         #!/bin/bash
         set -eux
-
+        echo $PATH > /tmp/path.txt
         if [[ `systemctl` =~ -\.mount ]]; then
 
             # if there is no system unit file, install a local unit
