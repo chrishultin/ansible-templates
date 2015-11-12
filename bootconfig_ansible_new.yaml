@@ -6,6 +6,8 @@ resources:
     type: "OS::Heat::CloudConfig"
     properties:
       cloud_config:
+        runcmd:
+        - easy_install pip
         packages:
         write_files:
         - path: /etc/os-collect-config.conf
