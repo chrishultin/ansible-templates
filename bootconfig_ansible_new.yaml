@@ -859,6 +859,14 @@ resources:
             # if os-collect-config is in /usr/local/bin, symlink it
             ln -s /usr/local/bin/os-collect-config /usr/bin/os-collect-config
         fi
+        if [ ! -f /usr/bin/os-refresh-config ]; then
+            # if os-refresj-config is in /usr/local/bin, symlink it
+            ln -s /usr/local/bin/os-refresh-config /usr/bin/os-refresh-config
+        fi
+        if [ ! -f /usr/bin/os-apply-config ]; then
+            # if os-apply-config is in /usr/local/bin, symlink it
+            ln -s /usr/local/bin/os-apply-config /usr/bin/os-apply-config
+        fi
 
         if [[ `systemctl` =~ -\.mount ]]; then
 
