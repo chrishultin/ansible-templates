@@ -906,7 +906,6 @@ resources:
     properties:
       parts:
       - config: { get_resource: configure }
-      - config: { get_resource: install_agents }
       - config: { get_resource: start }
 
 outputs:
