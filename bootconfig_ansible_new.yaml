@@ -855,6 +855,10 @@ resources:
         set -eux
 
         export PATH=$PATH:/usr/local/bin
+        if [! -f /usr/bin/os-collect-config]; then
+            # if os-collect-config is in /usr/local/bin, symlink it
+            ln -s /usr/local/bin/os-collect-config /usr/bin/os-collect-config
+        fi
 
         if [[ `systemctl` =~ -\.mount ]]; then
 
