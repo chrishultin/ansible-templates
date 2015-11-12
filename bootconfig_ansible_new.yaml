@@ -7,7 +7,6 @@ resources:
     properties:
       cloud_config:
         packages:
-        - python-pip
         write_files:
         - path: /etc/os-collect-config.conf
           content: |
@@ -843,6 +842,7 @@ resources:
       config: |
         #!/bin/bash
         set -eux
+        easy_install pip
         pip install os-collect-config os-apply-config os-refresh-config dib-utils
 
   start:

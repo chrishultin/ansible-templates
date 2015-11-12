@@ -52,12 +52,12 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: 29861fa3-ca6d-4c78-a68b-a69fd7024ab9
+    default: 91538b4a-bacb-467a-ade2-ad9c6026a2c1
     label: Server Image
     description: Image to use for WordPress
     constraints:
     - allowed_values:
-      - 29861fa3-ca6d-4c78-a68b-a69fd7024ab9
+      - 91538b4a-bacb-467a-ade2-ad9c6026a2c1
   server_count:
     type: number
     default: 1
@@ -322,9 +322,6 @@ resources:
             stack: { get_param: "OS::stack_name" }
       nodes:
       - addresses: [ { get_attr: [wordpress_server, networks, private, 0] } ]
-        port: 80
-        condition: ENABLED
-      - addresses: { get_attr: [wordpress_secondary, private_ip] }
         port: 80
         condition: ENABLED
       port: 80
