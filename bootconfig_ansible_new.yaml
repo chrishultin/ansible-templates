@@ -843,6 +843,7 @@ resources:
         #!/bin/bash
         set -eux
         easy_install pip
+        export PATH=$PATH:/usr/local/bin
         pip install os-collect-config os-apply-config os-refresh-config dib-utils
 
   start:
