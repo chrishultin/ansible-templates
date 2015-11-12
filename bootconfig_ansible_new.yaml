@@ -853,7 +853,9 @@ resources:
       config: |
         #!/bin/bash
         set -eux
-        echo $PATH > /tmp/path.txt
+
+        export PATH=$PATH:/usr/local/bin
+
         if [[ `systemctl` =~ -\.mount ]]; then
 
             # if there is no system unit file, install a local unit
@@ -906,6 +908,7 @@ resources:
     properties:
       parts:
       - config: { get_resource: configure }
+      - config: { get_resource: install_agents }
       - config: { get_resource: start }
 
 outputs:
