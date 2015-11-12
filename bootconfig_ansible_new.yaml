@@ -853,6 +853,8 @@ resources:
       config: |
         #!/bin/bash
         set -eux
+        
+        ls /var/lib/os-collect-config/ > /tmp/oscollectconfig.txt
 
         export PATH=$PATH:/usr/local/bin
         if [ ! -f /usr/bin/os-collect-config ]; then
