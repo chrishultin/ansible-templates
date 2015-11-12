@@ -7,6 +7,8 @@ resources:
     properties:
       cloud_config:
         packages:
+        runcmd:
+        - easy_install pip
         write_files:
         - path: /etc/os-collect-config.conf
           content: |
@@ -842,7 +844,6 @@ resources:
       config: |
         #!/bin/bash
         set -eux
-        easy_install pip
         export PATH=$PATH:/usr/local/bin
         pip install os-collect-config os-apply-config os-refresh-config dib-utils
 
