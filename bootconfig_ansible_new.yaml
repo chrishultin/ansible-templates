@@ -844,7 +844,6 @@ resources:
       config: |
         #!/bin/bash
         set -eux
-        easy_install pip
         export PATH=$PATH:/usr/local/bin
         pip install os-collect-config os-apply-config os-refresh-config dib-utils
 
@@ -922,7 +921,7 @@ resources:
     properties:
       parts:
       - config: { get_resource: configure }
-      - config: { get_resource: install_agents }
+#      - config: { get_resource: install_agents }
       - config: { get_resource: start }
 
 outputs:
