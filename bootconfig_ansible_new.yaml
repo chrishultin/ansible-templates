@@ -7,8 +7,6 @@ resources:
     properties:
       cloud_config:
         packages:
-        runcmd:
-        - easy_install pip
         write_files:
         - path: /etc/os-collect-config.conf
           content: |
@@ -921,7 +919,7 @@ resources:
     properties:
       parts:
       - config: { get_resource: configure }
-      - config: { get_resource: install_agents }
+#      - config: { get_resource: install_agents }
       - config: { get_resource: start }
 
 outputs:
