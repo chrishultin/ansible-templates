@@ -52,12 +52,12 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: c1b11aa3-e0a7-422f-8be5-c8d3236a6968
+    default: 5aefd86b-2dfa-4e08-bad1-95d3064f6f0e
     label: Server Image
     description: Image to use for WordPress
     constraints:
     - allowed_values:
-      - c1b11aa3-e0a7-422f-8be5-c8d3236a6968
+      - 5aefd86b-2dfa-4e08-bad1-95d3064f6f0e
   server_count:
     type: number
     default: 1
@@ -201,7 +201,7 @@ resources:
       software_config_transport: POLL_TEMP_URL
       config_drive: true
       user_data_format: SOFTWARE_CONFIG
-      user_data: { get_attr: [ bootstrap, config ] }
+#      user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         build_config: "backup_agent_only,monitoring_defaults"

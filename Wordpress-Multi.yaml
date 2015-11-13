@@ -68,6 +68,16 @@ parameters:
       - range: { min: 0, max: 10 }
 
 resources:
+  #Temporary
+  bootconfig_timer:
+    type: OS::Heat::WaitCondition
+    properties:
+      handle: { get_resouce: bootconfig_handle }
+      count: 5
+      timeout: 600
+  bootconfig_handle:
+    type: OS::Heat::WaitConditionHandle
+
   #Passwords
   mysql_root_pw:
     type: OS::Heat::RandomString
@@ -190,7 +200,9 @@ resources:
       server:
         get_resource: wordpress_server
   bootstrap:
-    type: "https://raw.githubusercontent.com/rackspace-orchestration-templates/software-config-bootstrap/master/bootconfig_yum_ansible.yaml"
+    type: "https://raw.githubusercontent.com/chrishultin/ansible-templates/master/bootconfig_ansible.yaml"
+    properties:
+      waitcondition: { get_attr: [bootconfig_handle, curl_cli] }
   #Master Server
   wordpress_server:
     type: OS::Nova::Server
@@ -323,9 +335,6 @@ resources:
             stack: { get_param: "OS::stack_name" }
       nodes:
       - addresses: [ { get_attr: [wordpress_server, networks, private, 0] } ]
-        port: 80
-        condition: ENABLED
-      - addresses: { get_attr: [wordpress_secondary, private_ip] }
         port: 80
         condition: ENABLED
       port: 80
