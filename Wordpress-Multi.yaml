@@ -70,13 +70,12 @@ parameters:
 resources:
   #Temporary
   bootconfig_timer:
-    type: OS::Heat::WaitCondition
+    type: OS::Heat::SwiftSignal
     properties:
-      handle: { get_resouce: bootconfig_handle }
-      count: 5
+      handle: { get_resource: bootconfig_handle }
       timeout: 600
   bootconfig_handle:
-    type: OS::Heat::WaitConditionHandle
+    type: OS::Heat::SwiftSignalHandle
 
   #Passwords
   mysql_root_pw:

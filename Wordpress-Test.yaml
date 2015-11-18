@@ -1,7 +1,18 @@
 heat_template_version: 2015-10-15
 
 description: |
- #### Wordpress, Multiple Servers
+ #### Production
+ 
+ This stack is indended for low traffic production situations,
+ but can be scaled to support higher traffic situations.  This
+ stack uses a Cloud Load Balancer and Cloud Database to allow
+ for scaling.
+
+ This stack is running the latest version of
+ [WordPress](http://wordpress.org/about/),
+ [Apache](http://httpd.apache.org/),
+ with a Cloud Database running
+ [MySQL 5.6](http://www.mysql.com/about/).
 
 parameter_groups:
 - label: WordPress Settings
@@ -52,12 +63,12 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: 5aefd86b-2dfa-4e08-bad1-95d3064f6f0e
+    default: 60e08bb3-2404-412e-9fff-0501a7eece1c
     label: Server Image
     description: Image to use for WordPress
     constraints:
     - allowed_values:
-      - 5aefd86b-2dfa-4e08-bad1-95d3064f6f0e
+      - 60e08bb3-2404-412e-9fff-0501a7eece1c
   server_count:
     type: number
     default: 1
@@ -160,11 +171,6 @@ resources:
       input_values:
         apache_default_domain: { get_param: wordpress_url }
         tz: "America/Chicago"
-#        mysql_root_user: "root"
-#        mysql_root_password: { get_attr: [mysql_root_pw, value] }
-#        mysql_default_user: "wordpress"
-#        mysql_default_user_password: { get_attr: [database_pass, value] }
-#        mysql_default_database: "wordpress"
         holland_mysql_user: "holland"
         holland_mysql_password: {  get_attr: [holland_pass, value] }
         holland_mysql_host: { get_attr: [wordpress_database, hostname] }
@@ -188,8 +194,6 @@ resources:
         get_resource: wordpress_config
       server:
         get_resource: wordpress_server
-  bootstrap:
-    type: "https://raw.githubusercontent.com/chrishultin/ansible-templates/master/bootconfig_ansible_new.yaml"
   #Master Server
   wordpress_server:
     type: OS::Nova::Server
@@ -201,7 +205,6 @@ resources:
       software_config_transport: POLL_TEMP_URL
       config_drive: true
       user_data_format: SOFTWARE_CONFIG
-#      user_data: { get_attr: [ bootstrap, config ] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         build_config: "backup_agent_only,monitoring_defaults"
@@ -322,6 +325,9 @@ resources:
             stack: { get_param: "OS::stack_name" }
       nodes:
       - addresses: [ { get_attr: [wordpress_server, networks, private, 0] } ]
+        port: 80
+        condition: ENABLED
+      - addresses: { get_attr: [wordpress_secondary, private_ip] }
         port: 80
         condition: ENABLED
       port: 80
