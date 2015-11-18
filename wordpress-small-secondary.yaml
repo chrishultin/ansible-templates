@@ -34,7 +34,8 @@ parameters:
   apache_default_domain:
     type: string
     default: exmaple.com
-
+  master_server:
+    type: string
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -77,6 +78,7 @@ resources:
       input_values:
         nginx_vhost_str: { get_param: apache_default_domain }
         nginx_vhost_tempate: 'wordpress_secondary'
+        nginx_upstream_server: { get_param: master_server }
         tz: "America/Chicago"
       config:
         get_resource: wordpress_config
