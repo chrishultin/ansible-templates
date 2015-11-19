@@ -59,8 +59,8 @@ resources:
           connection: local
           roles:
           - common
-          - apache
-          - php
+          - nginx
+          - php-fpm
           - firewall
   deploy_roles:
     type: OS::Heat::SoftwareDeployment
