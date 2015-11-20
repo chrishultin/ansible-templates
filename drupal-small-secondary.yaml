@@ -78,7 +78,7 @@ resources:
       input_values:
         nginx_vhost_str: { get_param: apache_default_domain }
         nginx_vhost_template: "drupal_secondary"
-        nginx_vhost_phpmyadmin: "true"
+        nginx_vhost_phpmyadmin: "True"
         nginx_upstream_server: { get_param: master_server }
         tz: "America/Chicago"
       config:
