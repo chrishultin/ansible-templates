@@ -33,6 +33,7 @@ parameters:
     default: example
     label: Database Name
     description: Database to configure in SQL
+    constraints:
     - allowed_pattern: "^[a-zA-Z0-9.-]{1,255}$"
       description: Must only contain alphanumeric characters, '-', and '.'
   php_myadmin:
