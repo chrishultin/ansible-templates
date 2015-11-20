@@ -41,6 +41,11 @@ parameters:
     default: false
     label: PHPMyAdmin
     description: Enable or disable PHPMyAdmin
+  backup_email:
+    type: string
+    default: admin@example.com
+    label: E-mail
+    description: E-mail address to be notified for failing backups
   #Advanced Options
   server_flavor:
     type: string
@@ -158,6 +163,7 @@ resources:
       input_values:
         nginx_vhost_str: { get_param: php_url }
         nginx_vhost_template: "default"
+        nginx_vhost_phpmyadmin: { get_param: php_myadmin }
         tz: "America/Chicago"
         holland_mysql_user: "holland"
         holland_mysql_password: {  get_attr: [holland_pass, value] }
@@ -263,7 +269,7 @@ resources:
       - FilePath: "/var/www"
         FileItemType: "Folder"
       NotifyFailure: true
-      NotifyRecipients: { get_param: php_email }
+      NotifyRecipients: { get_param: backup_email }
       TimeZoneId: Central Standard Time
       StartTimeAmPm: AM
       StartTimeHour: 1
@@ -285,6 +291,7 @@ resources:
           server_image: { get_param: server_image }
           server_flavor: { get_param: server_flavor }
           apache_default_domain: { get_param: php_url }
+          php_myadmin: { get_param: php_myadmin }
           server_name:
             str_replace:
               template: stack-secondary-%index%
@@ -343,11 +350,18 @@ outputs:
             get_attr: [php_server, accessIPv4]
   mysql_user:
     description: Database User
-    value: "php"
+    value: { get_param: db_user }
+  mysql_database:
+    description: Database Name
+    value: {get_param: db_name }
   mysql_password:
     description: Database Password
     value:
       get_attr: [database_pass, value]
+  mysql_host:
+    description: Database Host
+    value:
+      get_attr: [php_database, hostname]
   ssh_private_key:
     description: SSH Private Key
     value:
