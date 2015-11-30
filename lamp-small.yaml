@@ -9,7 +9,7 @@ parameter_groups:
   - lamp_url
   - db_user
   - db_name
-  - lamp_myadmin
+  - php_myadmin
 parameters:
   #LAMP Customization
   lamp_url:
@@ -324,7 +324,6 @@ resources:
           server_image: { get_param: server_image }
           server_flavor: { get_param: server_flavor }
           apache_default_domain: { get_param: lamp_url }
-          lamp_myadmin: { get_param: lamp_myadmin }
           server_name:
             str_replace:
               template: stack-secondary-%index%
