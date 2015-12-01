@@ -1,9 +1,5 @@
 heat_template_version: 2014-10-16
 
-parameters:
-  waitcondition:
-    type: string
-
 resources:
 
   configure:
@@ -11,10 +7,6 @@ resources:
     properties:
       cloud_config:
         package_upgrade: true
-        yum_repos:
-          epel-stable:
-            baseurl: http://dl.fedoraproject.org/pub/epel/7/$basearch
-            enabled: true
         packages:
         - python-pip
         - git
@@ -25,7 +17,6 @@ resources:
         - libffi-dev
         - libxml2-dev
         - libxslt-dev
-        - ansible
         write_files:
         - path: /etc/os-collect-config.conf
           content: |
@@ -596,7 +587,7 @@ resources:
       config: |
         #!/bin/bash
         set -eux
-        pip install os-collect-config os-apply-config os-refresh-config dib-utils
+        pip install ansible os-collect-config os-apply-config os-refresh-config dib-utils
 
   start:
     type: "OS::Heat::SoftwareConfig"
@@ -654,9 +645,6 @@ resources:
                 echo "ERROR: only systemd or upstart supported" 1>&2
                 exit 1
             fi
-            wc_notify --data-binary '{"status": "SUCCESS"}'
-          params:
-            wc_notify: { get_param: waitcondition }
 
   install_config_agent:
     type: "OS::Heat::MultipartMime"
