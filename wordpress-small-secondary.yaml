@@ -21,9 +21,9 @@ parameters:
   server_image:
     type: string
     default: edcbb9d6-5a9a-457d-8786-02509c0bfa39
-    constraints:
-    - allowed_values:
-      - edcbb9d6-5a9a-457d-8786-02509c0bfa39
+#    constraints:
+#    - allowed_values:
+#      - edcbb9d6-5a9a-457d-8786-02509c0bfa39
   ssh_key:
     type: string
     label: SSH Key
