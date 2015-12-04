@@ -1,0 +1,233 @@
+heat_template_version: 2015-10-15
+
+description: |
+ #### Production
+parameter_groups:
+- label: Minecraft Settings
+  parameters:
+  - minecraft_difficulty
+  - minecraft_monsters
+  - minecraft_hardcore
+  - minecraft_animals
+  - minecraft_npcs
+  - minecraft_motd
+  - minecraft_max_players
+
+parameters:
+  #Minecraft Customization
+  minecraft_difficulty:
+    type: number
+    label: Difficulty
+    description: Difficulty level for Minecraft.  0 - Peaceful, 1 - Easy, 2 - Normal, 3 - Hard
+    default: 2
+    constraints:
+    - allowed_values:
+      - 0
+      - 1
+      - 2
+      - 3
+  minecraft_monsters:
+    type: boolean
+    label: Spawn Monsters
+    description: Enable or disable spawning of hostile mobs
+    default: true
+  minecraft_hardcore:
+    type: boolean
+    label: Hardcore Mode
+    description: Enable or disable Hardcore mode.  In Hardcore mode, users will be banned from the server upon death
+    default: false
+  minecraft_animals:
+    type: boolean
+    label: Spawn Animals
+    description: Enable or disable spawning of passive mobs
+    default: true
+  minecraft_npcs:
+    type: boolean
+    label: Spawn NPCs
+    description: Enable or disable spawning of villagers
+    default: true
+  minecraft_motd:
+    type: string
+    label: Message Of The Day
+    description: Message to be displayed in the server list
+    default: A Minecraft Server
+    constraints:
+    - length: { min: 0, max: 59 }
+  minecraft_max_players:
+    type: number
+    label: Maximum Players
+    description: Maximum number of players able to connect at any given time
+    default: 20
+    constraints:
+    - range: {min: 1, max: 999}
+  #Advanced Options
+  minecraft_online:
+    type: boolean
+    label: Online
+    default: true
+    description: Online mode requires clients to have a valid Minecraft account.
+  server_flavor:
+    type: string
+    default: 4 GB General Purpose v1
+    label: Server Flavor
+    description: Flavor of Cloud Server to use for Minecraft
+    constraints:
+    - allowed_values:
+      - 1 GB General Purpose v1
+      - 2 GB General Purpose v1
+      - 4 GB General Purpose v1
+      - 8 GB General Purpose v1
+  server_image:
+    type: string
+    default: da1fc2aa-0dda-4adc-ac6a-b64e7dcddfd2
+    label: Server Image
+    description: Image to use for Minecraft
+    constraints:
+    - allowed_values:
+      - da1fc2aa-0dda-4adc-ac6a-b64e7dcddfd2
+  server_count:
+    type: number
+    default: 0
+    label: Number of Secondary Servers
+    description: Number of secondary web nodes
+    constraints:
+      - range: { min: 0, max: 10 }
+
+resources:
+  #SSH Key
+  ssh_key:
+    type: OS::Nova::KeyPair
+    properties:
+      name: { get_param: "OS::stack_id" }
+      save_private_key: true
+  #Software Configurations
+  upload_role_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+      - name: results
+      config: |
+        #!/bin/bash
+        set -e
+        git clone -b 'update-standardization' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+
+  minecraft_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      inputs:
+      - default: "[]"
+        name: firewall_nodes
+        type: CommaDelimitedList
+      - default: "[]"
+        name: firewall_node_rules
+        type: CommaDelimitedList
+      config: |
+        ---
+        - name: Install and configure Minecraft
+          hosts: localhost
+          connection: local
+          roles:
+          - common
+          - minecraft
+          - firewall
+  deploy_roles:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      config:
+        get_resource: upload_role_config
+      server:
+        get_resource: minecraft_server
+  deploy_minecraft:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: deploy_roles
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      input_values:
+        tz: "America/Chicago"
+        firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,25565,tcp"]
+        minecraft_difficulty: { get_param: minecraft_difficulty }
+        minecraft_spawn_monsters: { get_param: minecraft_monsters }
+        minecraft_hardcore: { get_param: minecraft_hardcore }
+        minecraft_max_players: { get_param: minecraft_max_players }
+        minecraft_port: 25565
+        minecraft_spawn_npcs: { get_param: minecraft_npcs }
+        minecraft_spawn_animals: { get_param: minecraft_animals }
+        minecraft_online: { get_param: minecraft_online }
+        minecraft_motd: { get_param: minecraft_motd }
+      config:
+        get_resource: minecraft_config
+      server:
+        get_resource: minecraft_server
+  #Master Server
+  minecraft_server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: "OS::stack_name" }
+      image: { get_param: server_image }
+      flavor: { get_param: server_flavor }
+      key_name: { get_resource: ssh_key }
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        build_config: "backup_agent_only,monitoring_defaults"
+#  #Monitoring Checks
+#  minecraft_server_http_check:
+#    type: Rackspace::CloudMonitoring::Check
+#    depends_on: deploy_minecraft
+#    properties:
+#      entity: { get_resource: minecraft_server }
+#      type: remote.http
+#      label:
+#        str_replace:
+#          template: stack Master HTTP Check
+#          params:
+#            stack: { get_param: "OS::stack_name" }
+#      details:
+#        url:
+#          str_replace:
+#            template: "http://ipaddr"
+#            params:
+#              ipaddr: { get_attr: [minecraft_server, accessIPv4] }
+#      metadata:
+#        rax-heat: { get_param: "OS::stack_id" }
+#        stack-name: { get_param: "OS::stack_name" }
+#      period: 120
+#      timeout: 10
+#      monitoring_zones_poll:
+#      - Northern Virginia (IAD)
+#      - Chicago (ORD)
+#      - Dallas Fort Worth (DFW)
+#      - London (LON)
+#      target_hostname: { get_attr: [minecraft_server, accessIPv4] }
+#      target_receiver: IPv4
+  #Cloud Backup
+#  minecraft_backup:
+#    type: Rackspace::Cloud::BackupConfig
+#    depends_on: minecraft_server
+#    properties:
+#      host_ip_address: { get_attr: [minecraft_server, accessIPv4] }
+#      BackupConfigurationName:
+#        str_replace:
+#          template: stack Weekly Backup
+#          params:
+#            stack: { get_param: "OS::stack_name" }
+#      Inclusions:
+#      - FilePath: "/home/minecraft"
+#        FileItemType: "Folder"
+#      NotifyFailure: true
+#      NotifyRecipients: { get_param: minecraft_email }
+#      TimeZoneId: Central Standard Time
+#      StartTimeAmPm: AM
+#      StartTimeHour: 1
+#      StartTimeMinute: 0
+#      HourInterval: null
+#      DayOfWeekId: 0
+#      Frequency: "Weekly"
+#      VersionRetention: 30
+
+outputs:
