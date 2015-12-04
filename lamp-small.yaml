@@ -327,6 +327,7 @@ resources:
               params:
                 stack: { get_param: "OS::stack_name" }
           master_server: { get_attr: [lamp_server, networks, private, 0] }
+          php_myadmin: { get_param: php_myadmin }
   #Cloud Load Balancer
   load_balancer:
     type: Rackspace::Cloud::LoadBalancer

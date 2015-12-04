@@ -36,6 +36,8 @@ parameters:
     default: exmaple.com
   master_server:
     type: string
+  php_myadmin:
+    type: boolean
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -78,7 +80,7 @@ resources:
       input_values:
         nginx_vhost_str: { get_param: apache_default_domain }
         nginx_vhost_template: 'default_secondary'
-        nginx_vhost_lampmyadmin: { get_param: lamp_myadmin }
+        nginx_vhost_lampmyadmin: { get_param: php_myadmin }
         nginx_upstream_server: { get_param: master_server }
         tz: "America/Chicago"
       config:
