@@ -77,6 +77,16 @@ parameters:
     constraints:
     - allowed_values:
       - 96a06fc9-c230-422c-81d4-562f97517a5b
+  loadbalancer_flavor:
+    type: string
+    default: 2 GB General Purpose v1
+    label: Server Flavor
+    description: Flavor of Cloud Server to use for WordPress
+    constraints:
+    - allowed_values:
+      - 2 GB General Purpose v1
+      - 4 GB General Purpose v1
+      - 8 GB General Purpose v1
   server_count:
     type: number
     default: 0
@@ -467,7 +477,7 @@ outputs:
   drupal_public_ip:
     description: Load Balancer IP
     value:
-      get_attr: [load_balancer, PublicIp]
+      get_attr: [load_balancer, accessIPv4]
   drupal_admin_url:
     description: Drupal Admin URL
     value:
@@ -508,4 +518,4 @@ outputs:
   secondary_ips:
     description: Secondary Node IPs
     value:
-      get_attr: [drupal_secondary, public_ip]
+      get_attr: [drupal_secondary, private_ip]

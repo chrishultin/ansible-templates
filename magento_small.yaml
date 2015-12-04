@@ -86,10 +86,10 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: 96a06fc9-c230-422c-81d4-562f97517a5b
+    default: 00b81499-827e-414e-bb11-74c15df615f5
     constraints:
     - allowed_values:
-      - 96a06fc9-c230-422c-81d4-562f97517a5b
+      - 00b81499-827e-414e-bb11-74c15df615f5
   database_disk:
     type: number
     default: 10
