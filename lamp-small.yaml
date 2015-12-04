@@ -213,7 +213,7 @@ resources:
     properties:
       name: { get_param: "OS::stack_name" }
 #      image: { get_param: server_image }
-      image: da1fc2aa-0dda-4adc-ac6a-b64e7dcddfd2
+      image: da1fc2aa-0dda-4adc-ac6a-b64e7dcddfd2 
       flavor: { get_param: server_flavor }
       key_name: { get_resource: ssh_key }
       software_config_transport: POLL_TEMP_URL
