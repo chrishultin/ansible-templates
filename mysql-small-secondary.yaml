@@ -39,6 +39,8 @@ parameters:
     default:  
   master_server:
     type: string
+  mysql_root_pass:
+    type: string
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -80,6 +82,7 @@ resources:
       input_values:
         tz: "America/Chicago"
         mysql_role: "slave"
+        mysql_root_password: { get_param: mysql_root_pass }
         mysql_slave_password: { get_param: mysql_slave_pass }
         mysql_slave_master: { get_param: master_server }
         mysql_node_index: { get_param: mysql_node_index }
