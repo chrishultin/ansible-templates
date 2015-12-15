@@ -112,7 +112,7 @@ resources:
           params:
             stack: { get_param: "OS::stack_name" }
       details:
-        port: { get_param: mysql_port }
+        port: 3306
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         stack-name: { get_param: "OS::stack_name" }
