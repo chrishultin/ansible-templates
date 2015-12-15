@@ -105,7 +105,7 @@ resources:
     depends_on: deploy_mysql
     properties:
       entity: { get_resource: mysql_server }
-      type: remote.port
+      type: remote.tcp
       label:
         str_replace:
           template: stack Master MySQL Port Check
