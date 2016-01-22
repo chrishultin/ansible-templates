@@ -1,0 +1,80 @@
+  #nginx load balancer
+  upload_lb_role_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+      - name: results
+      config: |
+        #!/bin/bash
+        set -e
+        git clone -b 'stable' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+  deploy_lb_roles:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      config:
+        get_resource: upload_lb_role_config
+      server:
+        get_resource: load_balancer
+  deploy_loadbalancer:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: deploy_lb_roles
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      input_values:
+        nginx_vhost_str: { get_param: lamp_url }
+        nginx_vhost_template: "loadbalancer"
+        nginx_upstream_server: { get_attr: [lamp_server, networks, private, 0] }
+        nginx_lb_nodes: { get_attr: [lamp_secondary, private_ip] }
+        firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
+      config:
+        get_resource: loadbalancer_config
+      server:
+        get_resource: load_balancer
+  loadbalancer_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      inputs:
+      - default: "[]"
+        name: nginx_lb_nodes
+        type: CommaDelimitedList
+      - default: "[]"
+        name: firewall_global_rules
+        type: CommaDelimitedList
+      config: |
+        ---
+        - name: Install and configure nginx as Load Balancer
+          hosts: localhost
+          connection: local
+          roles:
+          - nginx
+          - firewall
+  load_balancer:
+    type: OS::Nova::Server
+    properties:
+      name:
+        str_replace:
+          template: stack_Load_Balancer
+          params:
+            stack: { get_param: "OS::stack_name" }
+#      image: { get_param: server_image }
+      image: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+      flavor: { get_param: loadbalancer_flavor }
+      key_name: { get_resource: ssh_key }
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      networks:
+      - network: { get_param: rc_network_name }
+      - uuid: 11111111-1111-1111-1111-111111111111
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        build_config: "monitoring_agent_only"
+  load_balancer_public_ip:
+    type: Rackspace::RackConnect::PublicIP
+    depends_on:
+    - load_balancer
+    properties:
+      server_id: { get_resource: load_balancer }

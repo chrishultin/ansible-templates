@@ -1,0 +1,384 @@
+heat_template_version: 2015-10-15
+
+description: |
+ #### Production
+parameter_groups:
+
+parameters:
+  #WordPress Customization
+  ghost_url:
+    type: string
+    default: example.com
+    label: Site Domain
+    description: Domain to use with WordPress Site
+    constraints:
+    - allowed_pattern: "^[a-zA-Z0-9.-]{1,255}.[a-zA-Z]{2,15}$"
+      description: Must be a valid domain name
+  ghost_email:
+    type: string
+    default: admin@example.com
+    label: WordPress Admin E-mail
+    description: E-mail Address for WordPress Admin User
+  #Advanced Options
+  flavor:
+    type: string
+    default: 4 GB General Purpose v1
+    label: Server Flavor
+    description: Flavor of Cloud Server to use for WordPress
+    constraints:
+    - allowed_values:
+      - 1 GB General Purpose v1
+      - 2 GB General Purpose v1
+      - 4 GB General Purpose v1
+      - 8 GB General Purpose v1
+  database_disk:
+    type: number
+    default: 5
+    constraints:
+    - range:
+        min: 5
+        max: 500
+    label: Database Disk (in GB)
+    description: Size of the Cloud Database volume in GB
+  database_flavor:
+    type: string
+    default: 1GB Instance
+    label: Cloud Database Flavor
+    description: Flavor for the Cloud Database
+    constraints:
+    - allowed_values:
+      - 1GB Instance
+      - 2GB Instance
+      - 4GB Instance
+      - 8GB Instance
+      - 16GB Instance
+      - 32GB Instance
+      - 64GB Instance
+#  server_image:
+#    type: string
+#    default: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+#    label: Server Image
+#    description: Image to use for WordPress
+#    constraints:
+#    - allowed_values:
+#      - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+  server_count:
+    type: number
+    default: 0
+    label: Number of Secondary Servers
+    description: Number of secondary web nodes
+    constraints:
+      - range: { min: 0, max: 10 }
+
+resources:
+  #Passwords
+  ghost_pass:
+    type: OS::Heat::RandomString
+  database_pass:
+    type: OS::Heat::RandomString
+  holland_pass:
+    type: OS::Heat::RandomString
+  #SSH Key
+  ssh_key:
+    type: OS::Nova::KeyPair
+    properties:
+      name: { get_param: "OS::stack_id" }
+      save_private_key: true
+  #Cloud Database
+  ghost_database:
+    type: OS::Trove::Instance
+    properties:
+      name:
+        str_replace:
+          template: stack_Database
+          params:
+            stack: { get_param: "OS::stack_name" }
+      flavor: { get_param: database_flavor }
+      size: { get_param: database_disk }
+      datastore_type: mysql
+#      Not available in all regions.
+#      datastore_version: "5.6"
+      datastore_version: "5.6"
+      databases:
+      - name: ghost
+      - name: phpmyadmin
+      users:
+      - name: ghost
+        password: { get_attr: [database_pass, value] }
+        databases: [ghost, phpmyadmin]
+      - name: holland
+        password: { get_attr: [holland_pass, value] }
+        databases: [ghost, phpmyadmin]
+  #Software Configurations
+  upload_role_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+      - name: results
+      config: |
+        #!/bin/bash
+        set -e
+        git clone -b 'master' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+
+  ghost_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      inputs:
+      - default: "[]"
+        name: firewall_nodes
+        type: CommaDelimitedList
+      - default: "[]"
+        name: firewall_node_rules
+        type: CommaDelimitedList
+      config: |
+        ---
+        - name: Install and configure WordPress
+          hosts: localhost
+          connection: local
+          roles:
+          - common
+          - nginx
+          - php-fpm
+          - holland
+          - ghost
+          - phpmyadmin
+  other_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      inputs:
+      - default: "[]"
+        name: lsync_servers
+        type: CommaDelimitedList
+      config: |
+        ---
+        - name: Install and configure Lsyncd
+          hosts: localhost
+          connection: local
+          roles:
+          - firewall
+  deploy_roles:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      config:
+        get_resource: upload_role_config
+      server:
+        get_resource: ghost_server
+  deploy_ghost:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: deploy_roles
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      input_values:
+        nginx_vhost_str: { get_param: ghost_url }
+        nginx_vhost_template: "ghost"
+        nginx_vhost_phpmyadmin: "True"
+        tz: "America/Chicago"
+        holland_mysql_user: "holland"
+        holland_mysql_password: {  get_attr: [holland_pass, value] }
+        holland_mysql_host: { get_attr: [ghost_database, hostname] }
+        holland_create_user: "no"
+        ghost_db_host: { get_attr: [ghost_database, hostname] }
+        ghost_db_name: "ghost"
+        ghost_db_user: "ghost"
+        ghost_db_pass: { get_attr: [database_pass, value] }
+        ghost_port: 2368
+        ghost_ip: 'localhost'
+        phpmyadmin_host: { get_attr: [ghost_database, hostname] }
+        phpmyadmin_user: "ghost"
+        phpmyadmin_pass: { get_attr: [database_pass, value] }
+      config:
+        get_resource: ghost_config
+      server:
+        get_resource: ghost_server
+  deploy_other:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: deploy_ghost
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      input_values:
+        firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
+        firewall_node_rules: []
+      config:
+        get_resource: other_config
+      server:
+        get_resource: ghost_server
+  #Master Server
+  ghost_server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: "OS::stack_name" }
+#      image: { get_param: server_image }
+      image: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+      flavor: { get_param: flavor }
+      key_name: { get_resource: ssh_key }
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        build_config: "backup_agent_only,monitoring_defaults"
+  #Monitoring Checks
+  ghost_server_http_check:
+    type: Rackspace::CloudMonitoring::Check
+    depends_on: deploy_ghost
+    properties:
+      entity: { get_resource: ghost_server }
+      type: remote.http
+      label:
+        str_replace:
+          template: stack Master HTTP Check
+          params:
+            stack: { get_param: "OS::stack_name" }
+      details:
+        url:
+          str_replace:
+            template: "http://ipaddr"
+            params:
+              ipaddr: { get_attr: [ghost_server, accessIPv4] }
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        stack-name: { get_param: "OS::stack_name" }
+      period: 120
+      timeout: 10
+      monitoring_zones_poll:
+      - Northern Virginia (IAD)
+      - Chicago (ORD)
+      - Dallas Fort Worth (DFW)
+      - London (LON)
+      target_hostname: { get_attr: [ghost_server, accessIPv4] }
+      target_receiver: IPv4
+  load_balancer_http_check:
+    type: Rackspace::CloudMonitoring::Check
+    depends_on: load_balancer
+    properties:
+      entity: { get_resource: ghost_server }
+      type: remote.http
+      label:
+        str_replace:
+          template: stack Load Balancer HTTP Check
+          params:
+            stack: { get_param: "OS::stack_name" }
+      details:
+        url:
+          str_replace:
+            template: "http://ipaddr"
+            params:
+              ipaddr: { get_attr: [load_balancer, PublicIp] }
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        stack-name: { get_param: "OS::stack_name" }
+      period: 120
+      timeout: 10
+      monitoring_zones_poll:
+      - Northern Virginia (IAD)
+      - Chicago (ORD)
+      - Dallas Fort Worth (DFW)
+      - London (LON)
+      target_hostname: { get_attr: [load_balancer, PublicIp] }
+      target_receiver: IPv4
+  #Cloud Backup
+  ghost_backup:
+    type: Rackspace::Cloud::BackupConfig
+    depends_on: ghost_server
+    properties:
+      host_ip_address: { get_attr: [ghost_server, accessIPv4] }
+      BackupConfigurationName:
+        str_replace:
+          template: stack Weekly Backup
+          params:
+            stack: { get_param: "OS::stack_name" }
+      Inclusions:
+      - FilePath: "/var/spool/holland"
+        FileItemType: "Folder"
+      - FilePath: "/var/www"
+        FileItemType: "Folder"
+      NotifyFailure: true
+      NotifyRecipients: { get_param: ghost_email }
+      TimeZoneId: Central Standard Time
+      StartTimeAmPm: AM
+      StartTimeHour: 1
+      StartTimeMinute: 0
+      HourInterval: null
+      DayOfWeekId: 0
+      Frequency: "Weekly"
+      VersionRetention: 30
+  #Cloud Load Balancer
+  load_balancer:
+    type: Rackspace::Cloud::LoadBalancer
+    depends_on:
+    - deploy_ghost
+    properties:
+      name:
+        str_replace:
+          template: stack_Load_Balancer
+          params:
+            stack: { get_param: "OS::stack_name" }
+      nodes:
+      - addresses: [ { get_attr: [ghost_server, networks, private, 0] } ]
+        port: 80
+        condition: ENABLED
+      port: 80
+      protocol: HTTP
+      algorithm: ROUND_ROBIN
+      contentCaching: ENABLED
+      sessionPersistence: HTTP_COOKIE
+      virtualIps:
+      - type: PUBLIC
+        ipVersion: IPV4
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+
+outputs:
+  ghost_login_user:
+    description: WordPress Admin User
+    value:
+      get_param: ghost_user
+  ghost_login_password:
+    description: WordPress Admin Password
+    value:
+      get_attr: [ghost_pass, value]
+  ghost_public_ip:
+    description: Load Balancer IP
+    value:
+      get_attr: [load_balancer, PublicIp]
+  ghost_admin_url:
+    description: WordPress Admin URL
+    value:
+      str_replace:
+        template: "https://domain/wp-admin/"
+        params:
+          domain: { get_param: ghost_url }
+  ghost_public_url:
+    description: WordPress Public URL
+    value:
+      str_replace:
+        template: "http://domain/"
+        params:
+          domain: { get_param: ghost_url }
+  phpmyadmin_url:
+    description: PHPMyAdmin URL
+    value:
+      str_replace:
+        template: "https://IP/phpmyadmin/"
+        params:
+          IP:
+            get_attr: [ghost_server, accessIPv4]
+  mysql_user:
+    description: Database User
+    value: "ghost"
+  mysql_password:
+    description: Database Password
+    value:
+      get_attr: [database_pass, value]
+  ssh_private_key:
+    description: SSH Private Key
+    value:
+      get_attr: [ssh_key, private_key]
+  server_ip:
+    description: Server Public IP
+    value:
+      get_attr: [ghost_server, accessIPv4]
