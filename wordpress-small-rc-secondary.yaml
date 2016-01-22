@@ -111,7 +111,7 @@ resources:
 outputs:
   public_ip:
     description: Server Public IP
-    value: { get_attr: [lamp_server, networks, { get_param: rc_network_name}, 0] }
+    value: { get_attr: [wordpress_server, networks, { get_param: rc_network_name}, 0] }
   private_ip:
     description: Server Private IP
     value:
