@@ -48,7 +48,7 @@ resources:
         set -e
         git clone -b 'master' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
 
-  wordpress_config:
+  joomla_config:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ansible
@@ -69,8 +69,8 @@ resources:
       config:
         get_resource: upload_role_config
       server:
-        get_resource: wordpress_server
-  deploy_wordpress:
+        get_resource: joomla_server
+  deploy_joomla:
     type: OS::Heat::SoftwareDeployment
     depends_on: deploy_roles
     properties:
@@ -82,9 +82,9 @@ resources:
         nginx_upstream_server: { get_param: master_server }
         tz: "America/Chicago"
       config:
-        get_resource: wordpress_config
+        get_resource: joomla_config
       server:
-        get_resource: wordpress_server
+        get_resource: joomla_server
   joomla_server:
     type: OS::Nova::Server
     properties:
