@@ -35,6 +35,8 @@ parameters:
     default: example.com
   master_server:
     type: string
+  magento_pass:
+    type: string
 
 resources:
   upload_role_config:
@@ -85,6 +87,7 @@ resources:
         - { name: 'ses', port: '6380', persistent: 'TRUE', maxmemory: '1gb' }
         nginx_vhost_template: "magento_secondary"
         nginx_upstream_server: { get_param: master_server }
+        magento_sftp_password: { get_param: magento_pass }
         nginx_vhost_str: { get_param: apache_default_domain }
         magento_role: 'secondary'
         magento_vhost_template: 'magento_secondary'
