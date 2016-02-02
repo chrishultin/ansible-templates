@@ -129,6 +129,20 @@ parameters:
 #    constraints:
 #    - allowed_values:
 #      - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+  database_type:
+    type: string
+    default: Percona
+    constraints:
+    - allowed_values:
+      - Percona
+      - MySQL
+    label: Database type
+    description: |
+      Type of Cloud Database to use.  Please note that Percona is only available
+      in the following regions: Northern Virginia (IAD), Chicago (ORD),
+      Dallas (DFW), London (LON).
+      You must specify "MySQL" in order to use this template in Hong Kong (HKG)
+      or Sydney (SYD), otherwise the stack will fail to deploy.
   database_disk:
     type: number
     default: 10
