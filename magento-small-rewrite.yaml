@@ -243,8 +243,6 @@ resources:
         mysql_host_ip: { get_attr: [magento_database, hostname] }
         magento_sftp_user: "magento"
         magento_sftp_password: { get_attr: [magento_pass, value] }
-        magento_version: 1.9.1.0
-        magento_sample_content_version: 1.9.1.0
         magento_sample_content: { get_param: magento_samples }
         magento_vhost_domain: { get_param: magento_url }
         magento_admin_user: { get_param: magento_user }
