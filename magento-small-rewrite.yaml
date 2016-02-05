@@ -272,7 +272,10 @@ resources:
         lsync_servers: { get_attr: [magento_secondary, private_ip] }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
         firewall_nodes: { get_attr: [magento_secondary, private_ip] }
-        firewall_node_rules: []
+        firewall_node_rules:
+        - "32,6379,tcp"
+        - "32,6380,tcp"
+        - "32,6381,tcp"
       config: { get_resource: other_config }
       server: { get_resource: magento_server }
   #Master Server

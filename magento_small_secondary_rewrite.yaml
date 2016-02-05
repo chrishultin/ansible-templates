@@ -61,7 +61,6 @@ resources:
           roles:
           - common
           - nginx
-          - redis
           - memcache
           - php-fpm
           - magento-ce
@@ -81,16 +80,13 @@ resources:
       signal_transport: TEMP_URL_SIGNAL
       input_values:
         tz: "America/Chicago"
-        redis_instances:
-        - { name: 'fpc', port: '6381', persistent: 'FALSE', maxmemory: '1gb' }
-        - { name: 'obj', port: '6379', persistent: 'FALSE', maxmemory: '1gb' }
-        - { name: 'ses', port: '6380', persistent: 'TRUE', maxmemory: '1gb' }
         nginx_vhost_template: "magento_secondary"
         nginx_upstream_server: { get_param: master_server }
         magento_sftp_password: { get_param: magento_pass }
         nginx_vhost_str: { get_param: apache_default_domain }
         magento_role: 'secondary'
         magento_vhost_template: 'magento_secondary'
+        magento_redis_host: { get_param: master_server }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
       config:
         get_resource: magento_config
