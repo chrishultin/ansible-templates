@@ -243,6 +243,8 @@ resources:
         mysql_host_ip: { get_attr: [magento_database, hostname] }
         magento_sftp_user: "magento"
         magento_sftp_password: { get_attr: [magento_pass, value] }
+        magento_version: 1.9.1.0
+        magento_sample_content_version: 1.9.1.0
         magento_sample_content: { get_param: magento_samples }
         magento_vhost_domain: { get_param: magento_url }
         magento_admin_user: { get_param: magento_user }
@@ -250,6 +252,8 @@ resources:
         magento_admin_fname: { get_param: magento_fname }
         magento_admin_lname: { get_param: magento_lname }
         magento_admin_email: { get_param: magento_email }
+        magento_redis_host: { get_attr: [ magento_server, networks, private, 0 ] }
+        redis_host_ip: { get_attr: [ magento_server, networks, private, 0 ] }
       config: { get_resource: magento_config }
       server: { get_resource: magento_server }
   deploy_other:
@@ -272,10 +276,7 @@ resources:
         lsync_servers: { get_attr: [magento_secondary, private_ip] }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
         firewall_nodes: { get_attr: [magento_secondary, private_ip] }
-        firewall_node_rules:
-        - "32,6379,tcp"
-        - "32,6380,tcp"
-        - "32,6381,tcp"
+        firewall_node_rules: ['32,3679,tcp','32,3680,tcp','32,3681,tcp']
       config: { get_resource: other_config }
       server: { get_resource: magento_server }
   #Master Server
