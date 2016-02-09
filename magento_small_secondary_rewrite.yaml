@@ -87,6 +87,7 @@ resources:
         magento_role: 'secondary'
         magento_vhost_template: 'magento_secondary'
         magento_redis_host: { get_param: master_server }
+        magento_vhost_domain: { get_param: apache_default_domain }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,80,tcp", "0.0.0.0,0,443,tcp"]
       config:
         get_resource: magento_config
