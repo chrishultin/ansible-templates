@@ -130,6 +130,8 @@ resources:
     type: OS::Heat::RandomString
   holland_pass:
     type: OS::Heat::RandomString
+  ssh_pass:
+    type: OS::Heat::RandomString
   #SSH Key
   ssh_key:
     type: OS::Nova::KeyPair
@@ -242,7 +244,7 @@ resources:
         magento_db_name: "magento"
         mysql_host_ip: { get_attr: [magento_database, hostname] }
         magento_sftp_user: "magento"
-        magento_sftp_password: { get_attr: [magento_pass, value] }
+        magento_sftp_password: { get_attr: [ssh_pass, value] }
         magento_version: 1.9.1.0
         magento_sample_content_version: 1.9.1.0
         magento_sample_content: { get_param: magento_samples }
@@ -473,6 +475,10 @@ outputs:
     description: Server Public IP
     value:
       get_attr: [magento_server, accessIPv4]
+  ssh_password:
+    description: Magento SSH Password
+    value:
+      get_attr: [ ssh_pass, value ]
   secondary_ips:
     description: Secondary Node IPs
     value:
