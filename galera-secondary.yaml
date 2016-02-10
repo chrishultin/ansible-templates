@@ -73,7 +73,7 @@ outputs:
     description: Server Resource
     value:
       str_replace:
-        template: "{index: 'resource'}"
+        template: "{'index': 'resource'}"
         params:
           index: { get_param: index }
           resource: { get_attr: [ galera_server, show, id ] }
