@@ -72,7 +72,7 @@ outputs:
   server:
     description: Server Resource
     value:
-    - {get_param: index}: { get_attr: [ galera_server, show, id ] }
+      {get_param: index}: { get_attr: [ galera_server, show, id ] }
   public_ip:
     description: Server Public IP
     value:
