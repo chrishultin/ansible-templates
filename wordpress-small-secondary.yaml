@@ -24,6 +24,7 @@ parameters:
     constraints:
     - allowed_values:
       - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+      - fcbdef81-a2cd-49c0-8228-322385d1cb10
   ssh_key:
     type: string
     label: SSH Key
@@ -46,7 +47,7 @@ resources:
       config: |
         #!/bin/bash
         set -e
-        git clone -b 'update-standardization' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+        git clone -b 'stable' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
 
   wordpress_config:
     type: OS::Heat::SoftwareConfig
