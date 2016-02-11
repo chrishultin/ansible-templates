@@ -71,12 +71,7 @@ resources:
 outputs:
   server:
     description: Server Resource
-    value:
-      str_replace:
-        template: "{'index': 'resource'}"
-        params:
-          index: { get_param: index }
-          resource: { get_attr: [ galera_server, show, id ] }
+    value: { {get_param: index}: { get_attr: [ galera_server, show, id ] } }
   public_ip:
     description: Server Public IP
     value:
