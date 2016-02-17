@@ -24,6 +24,7 @@ parameters:
     constraints:
     - allowed_values:
       - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+      - fcbdef81-a2cd-49c0-8228-322385d1cb10
   ssh_key:
     type: string
     label: SSH Key
