@@ -73,15 +73,16 @@ parameters:
   #Advanced Options
   magento_install:
     type: string
-    default: Fresh install of the latest Magento CE 1.9.x release
+    default: "Fresh install of the latest Magento CE 1.9.x release"
     label: How should Magento be deployed?
-    description:|
+    description: |
       This option determines whether or not to install Magento and/or the sample
       data, or if you will need to upload your own Magento code.
+    constraints:
     - allowed_values:
-      - Fresh install of the latest Magento CE 1.9.x release
-      - Fresh install of the latest Magento CE 1.9.x release (including sample data)
-      - Don't install the Magento code –  I will upload an existing site (see instructions when Stack is complete)
+      - "Fresh install of the latest Magento CE 1.9.x release"
+      - "Fresh install of the latest Magento CE 1.9.x release (including sample data)"
+      - "Don't install the Magento code.  I will upload an existing site (see instructions when Stack is complete)"
   server_flavor:
     type: string
     default: 8 GB General Purpose v1
