@@ -294,7 +294,7 @@ resources:
     properties:
       name: { get_param: "OS::stack_name" }
 #      image: { get_param: server_image }
-      image: 020d8c24-5dfe-4d9a-81fa-a45e443ce1db
+      image: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
       flavor: { get_param: server_flavor }
       key_name: { get_resource: ssh_key }
       software_config_transport: POLL_TEMP_URL
@@ -400,7 +400,7 @@ resources:
           ssh_key: { get_resource: ssh_key }
           parent_stack_id: { get_param: "OS::stack_id" }
 #          server_image: { get_param: server_image }
-          server_image: 020d8c24-5dfe-4d9a-81fa-a45e443ce1db
+          server_image: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
           server_flavor: { get_param: server_flavor }
           apache_default_domain: { get_param: magento_url }
           master_server: { get_attr: [ magento_server, networks, private, 0 ] }
