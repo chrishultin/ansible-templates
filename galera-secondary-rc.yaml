@@ -81,7 +81,7 @@ outputs:
   public_ip:
     description: Server Public IP
     value:
-      get_attr: [galera_server, accessIPv4]
+      get_attr: [galera_server, networks, private, 0]
   private_ip:
     description: Server Private IP
     value:
