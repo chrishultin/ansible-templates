@@ -1,0 +1,24 @@
+heat_template_version: 2015-10-15
+
+description: |
+  #### Production
+
+parameter_groups:
+
+parameters:
+
+resources:
+  server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: "OS::stack_name" }
+      image: Ubuntu 14.04 LTS (Trusty Tahr) (PV)
+      flavor: io1-15
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        build_config: "backup_agent_only,monitoring_defaults"
+
+outputs:
