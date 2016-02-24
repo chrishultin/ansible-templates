@@ -73,6 +73,12 @@ resources:
       metadata:
         rax-heat: { get_param: "parent_stack_id" }
         build_config: "monitoring_defaults"
+  galera_server_public_ip:
+    type: Rackspace::RackConnect::PublicIP
+    depends_on:
+    - galera_server
+    properties:
+      server_id: { get_resource: galera_server }
 
 outputs:
   server:
@@ -81,7 +87,7 @@ outputs:
   public_ip:
     description: Server Public IP
     value:
-      get_attr: [galera_server, networks, private, 0]
+      get_attr: [galera_server, accessIPv4]
   private_ip:
     description: Server Private IP
     value:
