@@ -99,11 +99,19 @@ resources:
       metadata:
         rax-heat: { get_param: "parent_stack_id" }
         build_config: "monitoring_defaults"
+  wordpress_server_entity:
+    type: Rackspace::CloudMonitoring::Entity
+    properties:
+      agent_id: { get_resource: wordpress_server }
+      ip_addresses: {{ get_attr: [wordpress_server, accessIPv4] }}
+      label: { get_param: "OS::stack_name" }
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
   wordpress_server_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_wordpress
     properties:
-      entity: { get_resource: wordpress_server }
+      entity: { get_resource: wordpress_server_entity }
       type: remote.http
       label:
         str_replace:
