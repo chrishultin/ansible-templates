@@ -103,7 +103,8 @@ resources:
     type: Rackspace::CloudMonitoring::Entity
     properties:
       agent_id: { get_resource: wordpress_server }
-      ip_addresses: {{ get_attr: [wordpress_server, accessIPv4] }}
+      ip_addresses:
+        - { get_attr: [wordpress_server, accessIPv4] }
       label: { get_param: "OS::stack_name" }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
