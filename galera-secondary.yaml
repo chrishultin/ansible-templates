@@ -51,10 +51,10 @@ resources:
           template: |
             #!/bin/bash
             set -e
-            git clone -b 'ansible_branch' --single-branch --progress ansible_repo /etc/ansible/roles > $heat_outputs_path.results 2>&1
+            git clone -b 'tag' --single-branch --progress repository /etc/ansible/roles > $heat_outputs_path.results 2>&1
           params:
-            ansible_branch: { get_param: ansible_branch }
-            ansible_repo: { get_param: ansible_repo }
+            tag: { get_param: ansible_branch}
+            repository: { get_param: ansible_repo }
   deploy_roles:
     type: OS::Heat::SoftwareDeployment
     properties:
