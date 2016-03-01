@@ -24,8 +24,6 @@ parameters:
     constraints:
     - allowed_values:
       - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
-      - fcbdef81-a2cd-49c0-8228-322385d1cb10
-      - d55bbde7-5710-4efe-9e68-436563002806
   ssh_key:
     type: string
     label: SSH Key
@@ -38,6 +36,12 @@ parameters:
     default: exmaple.com
   master_server:
     type: string
+  ansible_branch:
+    type: string
+    default: stable
+  ansible_repo:
+    type: string
+    default: https://github.com/rackspace-orchestration-templates/ansible-roles.git
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -45,10 +49,15 @@ resources:
       group: script
       outputs:
       - name: results
-      config: |
-        #!/bin/bash
-        set -e
-        git clone -b 'stable' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+      config:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            git clone -b 'tag' --single-branch --progress repository /etc/ansible/roles > $heat_outputs_path.results 2>&1
+          params:
+            tag: { get_param: ansible_branch}
+            repository: { get_param: ansible_repo }
 
   wordpress_config:
     type: OS::Heat::SoftwareConfig
