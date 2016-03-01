@@ -24,7 +24,6 @@ parameters:
     constraints:
     - allowed_values:
       - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
-      - fcbdef81-a2cd-49c0-8228-322385d1cb10
   ssh_key:
     type: string
     label: SSH Key
@@ -35,6 +34,16 @@ parameters:
   apache_default_domain:
     type: string
     default: exmaple.com
+  master_server:
+    type: string
+  php_myadmin:
+    type: boolean
+  ansible_branch:
+    type: string
+    default: stable
+  ansible_repo:
+    type: string
+    default: https://github.com/rackspace-orchestration-templates/ansible-roles.git
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -45,7 +54,7 @@ resources:
       config: |
         #!/bin/bash
         set -e
-        git clone -b 'master' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+        git clone -b 'stable' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
 
   lamp_config:
     type: OS::Heat::SoftwareConfig
@@ -75,7 +84,10 @@ resources:
     properties:
       signal_transport: TEMP_URL_SIGNAL
       input_values:
-        apache_default_domain: { get_param: apache_default_domain }
+        nginx_vhost_str: { get_param: apache_default_domain }
+        nginx_vhost_template: 'default_secondary'
+        nginx_vhost_lampmyadmin: { get_param: php_myadmin }
+        nginx_upstream_server: { get_param: master_server }
         tz: "America/Chicago"
       config:
         get_resource: lamp_config
