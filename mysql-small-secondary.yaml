@@ -27,20 +27,28 @@ parameters:
   ssh_key:
     type: string
     label: SSH Key
-    description: SSH Key for MySQL Slave Nodes
+    description: SSH Key for LAMP Slave Nodes
   parent_stack_id:
     type: string
     default: None
-  mysql_slave_pass:
+  mysql_slave_master:
     type: string
-    default: replication_password
   mysql_node_index:
     type: string
-    default:  
-  master_server:
+  mysql_root_password:
     type: string
-  mysql_root_pass:
+  mysql_slave_user:
     type: string
+  mysql_slave_password:
+    type: string
+  mysql_role:
+    type: string
+  ansible_branch:
+    type: string
+    default: stable
+  ansible_repo:
+    type: string
+    default: https://github.com/rackspace-orchestration-templates/ansible-roles.git
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -48,10 +56,15 @@ resources:
       group: script
       outputs:
       - name: results
-      config: |
-        #!/bin/bash
-        set -e
-        git clone -b 'master' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+      config:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            git clone -b 'tag' --single-branch --progress repository /etc/ansible/roles > $heat_outputs_path.results 2>&1
+          params:
+            tag: { get_param: ansible_branch}
+            repository: { get_param: ansible_repo }
 
   mysql_config:
     type: OS::Heat::SoftwareConfig
@@ -81,11 +94,13 @@ resources:
       signal_transport: TEMP_URL_SIGNAL
       input_values:
         tz: "America/Chicago"
-        mysql_role: "slave"
-        mysql_root_password: { get_param: mysql_root_pass }
-        mysql_slave_password: { get_param: mysql_slave_pass }
-        mysql_slave_master: { get_param: master_server }
+        mysql_slave_master: { get_param: mysql_slave_master }
         mysql_node_index: { get_param: mysql_node_index }
+        mysql_root_password: { get_param: mysql_root_password }
+        mysql_slave_user: { get_param: mysql_slave_user }
+        mysql_slave_password: { get_param: mysql_slave_password}
+        mysql_role: { get_param: mysql_role }
+        firewall_global_rules: [ "0.0.0.0,0,22,tcp", "0.0.0.0,0,3306,tcp"]
       config:
         get_resource: mysql_config
       server:
@@ -103,19 +118,23 @@ resources:
       metadata:
         rax-heat: { get_param: "parent_stack_id" }
         build_config: "monitoring_defaults"
-  mysql_server_mysql_check:
+  mysql_server_http_check:
     type: Rackspace::CloudMonitoring::Check
     depends_on: deploy_mysql
     properties:
       entity: { get_resource: mysql_server }
-      type: remote.tcp
+      type: remote.http
       label:
         str_replace:
-          template: stack Master MySQL Port Check
+          template: stack Node HTTP Check
           params:
             stack: { get_param: "OS::stack_name" }
       details:
-        port: 3306
+        url:
+          str_replace:
+            template: "http://ipaddr"
+            params:
+              ipaddr: { get_attr: [mysql_server, accessIPv4] }
       metadata:
         rax-heat: { get_param: "OS::stack_id" }
         stack-name: { get_param: "OS::stack_name" }
