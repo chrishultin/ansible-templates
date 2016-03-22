@@ -143,3 +143,13 @@ resources:
       metadata:
         rax-heat: { get_param: parent_stack_id }
         build_config: "backup_agent_only,monitoring_defaults"
+
+outputs:
+  public_ip:
+    description: Server Public IP
+    value:
+      get_attr: [mongodb_server, accessIPv4]
+  private_ip:
+    description: Server Private IP
+    value:
+      get_attr: [ongodb_server, networks, private, 0]
