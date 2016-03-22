@@ -1,0 +1,142 @@
+heat_template_version: 2015-10-15
+
+description: |
+  #### MongoDB
+
+parameter_groups:
+  - label: rax-dev-params
+    parameters:
+    - server_image
+    - secondary_template
+    - ansible_branch
+    - ansible_repo
+
+parameters:
+  #Advanced Options
+  server_flavor:
+    type: string
+    default: 4 GB General Purpose v1
+    label: Server Flavor
+    description: Flavor of Cloud Server to be used for all servers in this stack
+    constraints:
+    - allowed_values:
+      - 1 GB General Purpose v1
+      - 2 GB General Purpose v1
+      - 4 GB General Purpose v1
+      - 8 GB General Purpose v1
+  server_count:
+    type: number
+    default: 0
+    label: Number of Secondary Servers
+    description: Number of secondary web nodes
+    constraints:
+      - range: { min: 0, max: 10 }
+  server_image:
+    type: string
+    default: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+    label: Server Image
+    description: Image to use for WordPress
+    constraints:
+    - allowed_values:
+      - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+  secondary_template:
+    type: string
+    default: https://raw.githubusercontent.com/rackspace-orchestration-templates/mysql-small/stable/mysql-small-secondary.yaml
+    label: Secondary Template
+    description: Template to use for secondary servers
+  ansible_branch:
+    type: string
+    default: stable
+    label: Git Branch or Tag for Ansible Roles
+    description: The Ansible Roles will be pulled from Git, using the tag or branch provided
+  ansible_repo:
+    type: string
+    default: https://github.com/rackspace-orchestration-templates/ansible-roles.git
+    label: Git Repo for Ansible Roles
+    description: The Ansible Roles will be pulled from Git, using the repo provided
+  mongodb_master:
+    type: string
+    default: 127.0.0.1
+
+resources:
+  #SSH Key
+  ssh_key:
+    type: OS::Nova::KeyPair
+    properties:
+      name: { get_param: "OS::stack_id" }
+      save_private_key: true
+
+  #Software Configurations
+  upload_role_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      outputs:
+      - name: results
+      config:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            git clone -b 'tag' --single-branch --progress repository /etc/ansible/roles > $heat_outputs_path.results 2>&1
+          params:
+            tag: { get_param: ansible_branch}
+            repository: { get_param: ansible_repo }
+
+  mongodb_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      config: |
+        ---
+        - name: Install and configure MongoDB
+          hosts: localhost
+          connection: local
+          roles:
+          - common
+          - mongodb
+          - firewall
+
+  #Software Deployments
+  deploy_roles:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      config:
+        get_resource: upload_role_config
+      server:
+        get_resource: mongodb_server
+
+  deploy_mongodb:
+    type: OS::Heat::SoftwareDeployment
+    depends_on: deploy_roles
+    properties:
+      signal_transport: TEMP_URL_SIGNAL
+      input_values:
+        tz: "America/Chicago"
+        mongodb_role: 'server'
+        mongodb_primary_ip: { get_attr: [ mongodb_server, networks, private, 0]}
+        mongodb_replicaset_name: { get_param: "OS::stack_name" }
+        firewall_global_rules: [ "0.0.0.0,0,22,tcp" ]
+        firewall_nodes: { get_param: mongodb_master }
+        firewall_node_rules: [ "32,27017,tcp" ]
+      config:
+        get_resource: mongodb_config
+      server:
+        get_resource: mongodb_server
+
+
+  #Master Server
+  mongodb_server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: "OS::stack_name" }
+      image: { get_param: server_image }
+      flavor: { get_param: server_flavor }
+      key_name: { get_resource: ssh_key }
+      software_config_transport: POLL_TEMP_URL
+      config_drive: true
+      user_data_format: SOFTWARE_CONFIG
+      metadata:
+        rax-heat: { get_param: "OS::stack_id" }
+        build_config: "backup_agent_only,monitoring_defaults"
