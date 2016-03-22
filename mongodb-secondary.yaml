@@ -152,4 +152,4 @@ outputs:
   private_ip:
     description: Server Private IP
     value:
-      get_attr: [ongodb_server, networks, private, 0]
+      get_attr: [mongodb_server, networks, private, 0]
