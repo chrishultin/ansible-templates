@@ -67,6 +67,9 @@ parameters:
   parent_stack_id:
     type: string
     default: None
+  mongodb_master_name:
+    type: string
+    default: 'Stack'
 
 resources:
   #Software Configurations
@@ -118,7 +121,8 @@ resources:
       input_values:
         tz: "America/Chicago"
         mongodb_role: 'server'
-        mongodb_primary_ip: { get_attr: [ mongodb_server, networks, private, 0]}
+        mongodb_primary_ip: { get_param: mongodb_master }
+        mongodb_primary_name: { get_param: mongodb_master_name }
         mongodb_replicaset_name: { get_param: "OS::stack_name" }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp" ]
         firewall_nodes: { get_param: mongodb_master }
