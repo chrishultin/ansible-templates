@@ -123,7 +123,7 @@ resources:
         mongodb_role: 'server'
         mongodb_primary_ip: { get_param: mongodb_master }
         mongodb_primary_name: { get_param: mongodb_master_name }
-        mongodb_replicaset_name: { get_param: "OS::stack_name" }
+        mongodb_replicaset_name: { get_param: mongodb_master_name }
         firewall_global_rules: [ "0.0.0.0,0,22,tcp" ]
         firewall_nodes: { get_param: mongodb_master }
         firewall_node_rules: [ "32,27017,tcp" ]
