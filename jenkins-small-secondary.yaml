@@ -20,11 +20,14 @@ parameters:
       - 8 GB General Purpose v1
   server_image:
     type: string
-    default: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+    default: Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM) (Orchestration)
+    label: Server Image
+    description: Image to be used for all servers in this stack
     constraints:
     - allowed_values:
-      - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
-      - fcbdef81-a2cd-49c0-8228-322385d1cb10
+      - Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM) (Orchestration)
+      - CentOS 7 (PVHVM) (Orchestration)
+    immutable: true
   ssh_key:
     type: string
     label: SSH Key
@@ -37,6 +40,14 @@ parameters:
     default: exmaple.com
   master_server:
     type: string
+  ansible_source:
+    type: string
+    default: http://catalog.rs-heat.com/ansible-roles/ansible-roles.tar.gz
+    label: Ansible Tarball
+    description: The Ansible Roles will be pulled from the location provided
+    immutable: true
+  swarm_password:
+    type: string
 resources:
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -44,10 +55,16 @@ resources:
       group: script
       outputs:
       - name: results
-      config: |
-        #!/bin/bash
-        set -e
-        git clone -b 'master' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+      config:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            mkdir -p /etc/ansible/roles
+            wget ansible_source -O /tmp/ansible-roles.tar.gz 2>&1
+            tar -xf /tmp/ansible-roles.tar.gz --strip-components=1 -C /etc/ansible/roles
+          params:
+            ansible_source: { get_param: ansible_source }
 
   jenkins_config:
     type: OS::Heat::SoftwareConfig
@@ -78,6 +95,7 @@ resources:
         tz: "America/Chicago"
         jenkins_ip: { get_param: master_server }
         jenkins_role: 'slave'
+        swarm_password: { get_param: swarm_password }
       config:
         get_resource: jenkins_config
       server:
