@@ -6,16 +6,15 @@ description: |
  This stack is intended for low to medium traffic production
  websites and can be scaled as needed to accommodate future
  growth.  This stack includes a Cloud Load Balancer, Cloud
- Database, and a Master server (plus optional secondary
+ Database, and a primary Web server (plus optional secondary
  servers).  It also includes Cloud Monitoring and Cloud
  Backups.
 
  This stack is running
- [Magento 1.9.2.0 Community Edition](http://www.magentocommerce.com/product/community-edition/),
+ The latest [Magento 1.9.x Community Edition](http://www.magentocommerce.com/product/community-edition/),
  [nginx](http://nginx.org/en/),
  and [PHP FPM](http://php-fpm.org/about/).
- with a Cloud Database running
- [Percona](https://www.percona.com/software/mysql-database/percona-server).
+ with a Cloud Database running MySQL 5.6 where available.
 
 parameter_groups:
 - label: Magento Settings
@@ -157,8 +156,8 @@ resources:
       flavor: { get_param: database_flavor }
       size: { get_param: database_disk }
       datastore_type: mysql
-      #datastore_version: "5.6"
-      datastore_version: "5.1"
+      #datastore_version: "5.1" 
+      # Not specifying datastore_version - it will default to the latest in region. 
       databases:
       - name: magento
       users:
